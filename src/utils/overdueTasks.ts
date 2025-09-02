@@ -1,4 +1,4 @@
-import { Task, User } from '../types';
+import type { Task, User } from '../types';
 
 export interface OverdueTaskInfo {
   task: Task;

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import { StatsCard } from '../../components/charts/StatsCard';
@@ -48,12 +48,7 @@ export function Analytics() {
     { name: 'Urgent', value: stats.tasksByPriority.urgent }
   ];
 
-  // Project progress data
-  const projectProgressData = state.projects.map(project => ({
-    name: project.name,
-    progress: project.progress,
-    tasks: state.tasks.filter(task => task.projectId === project.id).length
-  }));
+
 
   const completionRate = stats.totalTasks > 0 ? (stats.completedTasks / stats.totalTasks) * 100 : 0;
   const overdueRate = stats.totalTasks > 0 ? (stats.overdueTasks / stats.totalTasks) * 100 : 0;
@@ -117,7 +112,7 @@ export function Analytics() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {statusData.map((entry, index) => (
+                  {statusData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

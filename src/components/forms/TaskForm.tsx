@@ -1,11 +1,11 @@
-import React from 'react';
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
-import { Task, TaskStatus, TaskPriority } from '../../types';
+import type { Task } from '../../types';
 import { useAirflow } from '../../context/AirflowContext';
 
 const taskSchema = z.object({
@@ -50,8 +50,7 @@ export function TaskForm({ task, onSubmit, onCancel, defaultAssignee, showAssign
   const {
     register,
     handleSubmit,
-    formState: { errors },
-    setValue
+    formState: { errors }
   } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {

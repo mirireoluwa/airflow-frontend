@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, Users, Calendar, FolderOpen, CheckSquare, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardContent } from '../../components/ui/Card';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { ProjectStatusBadge } from '../../components/ui/Badge';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { ProjectForm } from '../../components/forms/ProjectForm';
 import { useAirflow } from '../../context/AirflowContext';
-import { Project, ProjectStatus } from '../../types';
+import type { Project, ProjectStatus } from '../../types';
 import { format } from 'date-fns';
 
 export function Projects() {
@@ -20,6 +20,7 @@ export function Projects() {
   const handleCreateProject = (data: any) => {
     const members = state.users.filter(user => data.members.includes(user.id));
     const owner = state.currentUser;
+    if (!owner) return;
 
     addProject({
       name: data.name,

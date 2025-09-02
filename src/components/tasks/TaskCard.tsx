@@ -1,4 +1,4 @@
-import { Calendar, User, Clock, Flag } from 'lucide-react';
+import { Calendar, User, Clock } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import { formatDistanceToNow } from 'date-fns';
 import type { Task } from '../../types';

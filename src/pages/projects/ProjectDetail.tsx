@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -6,7 +6,6 @@ import {
   Users, 
   CheckSquare,
   Plus,
-  Filter,
   List,
   LayoutGrid,
   Clock,
@@ -18,13 +17,13 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { TaskCard } from '../../components/tasks/TaskCard';
-import { formatDistanceToNow } from 'date-fns';
+
 import type { TaskStatus, TaskPriority } from '../../types';
 
 export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { state, addNotification } = useAirflow();
+  const { state } = useAirflow();
   
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchTerm, setSearchTerm] = useState('');

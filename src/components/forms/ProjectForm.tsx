@@ -1,11 +1,11 @@
-import React from 'react';
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
-import { Project, ProjectStatus, User } from '../../types';
+import type { Project } from '../../types';
 import { useAirflow } from '../../context/AirflowContext';
 
 const projectSchema = z.object({
@@ -49,8 +49,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
   const {
     register,
     handleSubmit,
-    formState: { errors },
-    watch
+    formState: { errors }
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
@@ -60,7 +59,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
       startDate: project?.startDate ? project.startDate.toISOString().split('T')[0] : '',
       endDate: project?.endDate ? project.endDate.toISOString().split('T')[0] : '',
       color: project?.color || '#3B82F6',
-      members: project?.members.map(m => m.id) || [state.currentUser.id]
+      members: project?.members.map(m => m.id) || [state.currentUser?.id || '']
     }
   });
 

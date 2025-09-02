@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { state, addNotification } = useAirflow();
+  const { state } = useAirflow();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 

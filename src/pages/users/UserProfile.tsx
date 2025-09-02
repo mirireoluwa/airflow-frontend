@@ -2,14 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
-  Mail, 
   Building, 
   User as UserIcon, 
   Calendar, 
   CheckSquare, 
   Clock,
   Plus,
-  Edit,
   Wifi,
   WifiOff,
   AlertTriangle,
@@ -21,8 +19,7 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { TaskForm } from '../../components/forms/TaskForm';
 import { ProgressBar } from '../../components/ui/ProgressBar';
-import { format } from 'date-fns';
-import type { Task, UserStatus } from '../../types';
+import type { UserStatus } from '../../types';
 
 export function UserProfile() {
   const { userId } = useParams<{ userId: string }>();
@@ -86,7 +83,7 @@ export function UserProfile() {
 
   const handleAssignTask = (data: any) => {
     const project = state.projects.find(p => p.id === data.projectId);
-    if (!project) return;
+    if (!project || !currentUser) return;
 
     addTask({
       title: data.title,
@@ -95,9 +92,10 @@ export function UserProfile() {
       status: 'todo',
       projectId: data.projectId,
       assignee: user,
+      reporter: currentUser,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       estimatedHours: data.estimatedHours,
-      tags: data.tags || []
+      tags: data.tags ? data.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean) : []
     });
 
     addNotification({
