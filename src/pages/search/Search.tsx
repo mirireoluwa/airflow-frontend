@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search as SearchIcon, FolderOpen, CheckSquare, User } from 'lucide-react';
+import { Search as SearchIcon, FolderOpen, CheckSquare, User as UserIcon } from 'lucide-react';
 import { useAirflow } from '../../context/AirflowContext';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -192,7 +192,7 @@ export function Search() {
               {searchResults.users.length > 0 && (
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <User className="h-5 w-5 mr-2 text-red-600" />
+                    <UserIcon className="h-5 w-5 mr-2 text-red-600" />
                     Users ({searchResults.users.length})
                   </h2>
                   <div className="space-y-3">
