@@ -5,7 +5,7 @@ import { useAirflow } from '../../context/AirflowContext';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import type { User } from '../../types';
+
 
 export function Search() {
   const { state, getScopedTasks } = useAirflow();
