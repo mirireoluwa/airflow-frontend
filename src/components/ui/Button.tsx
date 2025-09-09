@@ -11,11 +11,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const buttonVariants = {
-  primary: 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl',
-  secondary: 'bg-white/80 backdrop-blur-sm border border-gray-200/60 text-gray-700 hover:bg-white/90 hover:border-gray-300/80 shadow-md hover:shadow-lg',
+  primary: 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white',
+  secondary: 'bg-white/80 backdrop-blur-sm border border-gray-200/60 text-gray-700 hover:bg-white/90 hover:border-gray-300/80',
   outline: 'border border-gray-300/60 hover:border-gray-400/80 text-gray-700 hover:bg-white/50 backdrop-blur-sm',
   ghost: 'hover:bg-white/60 text-gray-700 backdrop-blur-sm',
-  danger: 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl'
+  danger: 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
 };
 
 const buttonSizes = {

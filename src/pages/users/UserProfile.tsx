@@ -14,6 +14,7 @@ import {
   Smile
 } from 'lucide-react';
 import { useAirflow } from '../../context/AirflowContext';
+import { getAssignableUsers } from '../../utils/roleUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
@@ -24,7 +25,7 @@ import type { UserStatus } from '../../types';
 export function UserProfile() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { state, addTask, addNotification } = useAirflow();
+  const { state, addTask } = useAirflow();
   const [isAssignTaskModalOpen, setIsAssignTaskModalOpen] = useState(false);
 
   const user = state.users.find(u => u.id === userId);
@@ -52,9 +53,11 @@ export function UserProfile() {
   }
 
   const currentUser = state.currentUser;
+  const assignableUsers = getAssignableUsers(currentUser, state.users);
   const canAssignTasks = currentUser && 
     (currentUser.role === 'admin' || currentUser.role === 'manager') &&
-    currentUser.department === user.department;
+    currentUser.department === user.department &&
+    assignableUsers.some(u => u.id === user.id);
 
   const userTasks = state.tasks.filter(task => task.assignee?.id === user.id);
   const completedTasks = userTasks.filter(task => task.status === 'done').length;
@@ -85,6 +88,13 @@ export function UserProfile() {
     const project = state.projects.find(p => p.id === data.projectId);
     if (!project || !currentUser) return;
 
+    // Check if current user can assign tasks to this user
+    const assignableUsers = getAssignableUsers(currentUser, state.users);
+    if (!assignableUsers.some(u => u.id === user.id)) {
+      alert('You do not have permission to assign tasks to this user.');
+      return;
+    }
+
     addTask({
       title: data.title,
       description: data.description,
@@ -95,17 +105,11 @@ export function UserProfile() {
       reporter: currentUser,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       estimatedHours: data.estimatedHours,
-      tags: data.tags ? data.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean) : []
+      tags: data.tags ? data.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean) : [],
+      checklist: []
     });
 
-    addNotification({
-      title: 'Task Assigned',
-      message: `Assigned "${data.title}" to ${user.name}`,
-      type: 'success',
-      read: false,
-      userId: currentUser?.id || '',
-      actionUrl: '/tasks'
-    });
+    // Removed duplicate task assignment notification - already handled in addTask
 
     setIsAssignTaskModalOpen(false);
   };

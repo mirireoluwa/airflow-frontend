@@ -1,4 +1,4 @@
-import { Calendar, User, Clock } from 'lucide-react';
+import { Calendar, User, Clock, CheckSquare } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import { formatDistanceToNow } from 'date-fns';
 import type { Task } from '../../types';
@@ -81,6 +81,29 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
             </div>
           )}
         </div>
+
+        {/* Checklist Progress */}
+        {task.checklist && task.checklist.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-gray-600">
+              <div className="flex items-center gap-1">
+                <CheckSquare className="h-3 w-3" />
+                <span>Checklist</span>
+              </div>
+              <span>
+                {task.checklist.filter(item => item.completed).length} / {task.checklist.length}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${(task.checklist.filter(item => item.completed).length / task.checklist.length) * 100}%` 
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">

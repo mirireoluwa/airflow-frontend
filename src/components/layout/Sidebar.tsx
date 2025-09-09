@@ -10,15 +10,15 @@ import {
   X,
   Columns,
   LogOut,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftOpen,
+  PanelLeftClose,
   AlertTriangle
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { useAirflow } from '../../context/AirflowContext';
+import { canAccessAnalytics, canAccessKanban } from '../../utils/roleUtils';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -61,7 +61,7 @@ const navItems = [
 ];
 
 export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
-  const { logout, clearUsers, state } = useAirflow();
+  const { logout, state } = useAirflow();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   return (
     <>
@@ -92,10 +92,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               {/* Collapse toggle button - only show on desktop */}
               <button
                 onClick={onToggleCollapse}
-                className="hidden lg:flex p-2 hover:bg-white/60 rounded-xl transition-colors"
+                className="hidden lg:flex p-2 mr-0 hover:bg-white/60 rounded-xl transition-colors"
                 title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
-                {isCollapsed ? <ChevronRight className="h-6 w-6" /> : <ChevronLeft className="h-6 w-6" />}
+                {isCollapsed ? <PanelLeftOpen className="h-6 w-6" /> : <PanelLeftClose className="h-6 w-6" />}
               </button>
               {/* Mobile close button */}
               <Button variant="ghost" size="sm" onClick={onClose} className="lg:hidden p-2 hover:bg-white/60 rounded-xl">
@@ -106,39 +106,50 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
 
           {/* Navigation */}
           <nav className="flex-1 px-6 py-8 space-y-3">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  end={item.href === '/' || item.href === '/tasks'}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center rounded-2xl text-sm font-medium transition-all duration-200 ease-out group',
-                      isCollapsed ? 'justify-center px-4 py-4' : 'space-x-4 px-4 py-3',
-                      isActive
-                        ? 'text-red-600'
-                        : 'text-gray-700 hover:text-gray-900'
-                    )
-                  }
-                  onClick={() => {
-                    // Close mobile menu on navigation
-                    if (window.innerWidth < 1024) {
-                      onClose();
+            {navItems
+              .filter((item) => {
+                // Filter based on user role
+                if (item.name === 'Analytics') {
+                  return canAccessAnalytics(state.currentUser);
+                }
+                if (item.name === 'Kanban Board') {
+                  return canAccessKanban(state.currentUser);
+                }
+                return true; // All other items are accessible to all roles
+              })
+              .map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    end={item.href === '/' || item.href === '/tasks'}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center rounded-2xl text-sm font-medium transition-all duration-200 ease-out group',
+                        isCollapsed ? 'justify-center px-4 py-4' : 'space-x-4 px-4 py-3',
+                        isActive
+                          ? 'text-red-600'
+                          : 'text-gray-700 hover:text-gray-900'
+                      )
                     }
-                  }}
-                  title={isCollapsed ? item.name : undefined}
-                >
-                  <Icon className={cn(
-                    'transition-transform duration-200',
-                    isCollapsed ? 'h-6 w-6' : 'h-6 w-6',
-                    'group-hover:scale-110'
-                  )} />
-                  {!isCollapsed && <span className="font-medium">{item.name}</span>}
-                </NavLink>
-              );
-            })}
+                    onClick={() => {
+                      // Close mobile menu on navigation
+                      if (window.innerWidth < 1024) {
+                        onClose();
+                      }
+                    }}
+                    title={isCollapsed ? item.name : undefined}
+                  >
+                    <Icon className={cn(
+                      'transition-transform duration-200',
+                      isCollapsed ? 'h-6 w-6' : 'h-6 w-6',
+                      'group-hover:scale-110'
+                    )} />
+                    {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                  </NavLink>
+                );
+              })}
           </nav>
 
 
@@ -159,27 +170,15 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                   <LogOut className={cn(isCollapsed ? "h-6 w-6" : "h-6 w-6")} />
                   {!isCollapsed && <span className="font-medium ml-4">Logout</span>}
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={clearUsers} 
-                  className={cn(
-                    "text-orange-600 hover:text-orange-700",
-                    isCollapsed ? "w-full justify-center p-2" : "w-full justify-start"
-                  )}
-                  title={isCollapsed ? 'Reset Users (Dev)' : undefined}
-                >
-                  <Trash2 className={cn(isCollapsed ? "h-6 w-6" : "h-6 w-6")} />
-                  {!isCollapsed && <span className="font-medium ml-4">Reset Users (Dev)</span>}
-                </Button>
               </div>
             )}
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
               {!isCollapsed ? (
                 <>
-                  <p className="text-xs font-medium text-gray-600 text-center">
-                    Airflow v1.0.0
-                  </p>
-                  <p className="text-xs text-gray-400 text-center mt-1">
+                   <p className="text-xs font-medium text-gray-600 ml-1 text-left">
+                     Airflow v1.0.0 (Beta)
+                   </p>
+                   <p className="text-xs text-gray-400 ml-1 mt-1 text-left">
                     Constructed by Mirireoluwa
                   </p>
                 </>

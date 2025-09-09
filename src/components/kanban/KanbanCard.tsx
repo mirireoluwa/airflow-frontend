@@ -1,19 +1,17 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, User, Clock } from 'lucide-react';
-import { TaskPriorityBadge } from '../ui/Badge';
+import { MessageCircle, FileText, MoreVertical } from 'lucide-react';
 import { getOverdueTaskColor } from '../../utils/overdueTasks';
 import type { Task } from '../../types';
 import { useAirflow } from '../../context/AirflowContext';
-import { format } from 'date-fns';
 
 interface KanbanCardProps {
   task: Task;
 }
 
 export function KanbanCard({ task }: KanbanCardProps) {
-  const { state } = useAirflow();
+  const { } = useAirflow();
   const {
     attributes,
     listeners,
@@ -30,7 +28,6 @@ export function KanbanCard({ task }: KanbanCardProps) {
     transition,
   };
 
-  const project = state.projects.find(p => p.id === task.projectId);
   
   // Check if task is overdue
   const isTaskOverdue = (task: Task): { isOverdue: boolean; daysOverdue: number } => {
@@ -47,13 +44,33 @@ export function KanbanCard({ task }: KanbanCardProps) {
   
   const overdueInfo = isTaskOverdue(task);
 
+  // Priority badge colors matching the image
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case 'low':
+        return 'bg-orange-100 text-orange-800';
+      case 'medium':
+        return 'bg-blue-100 text-blue-800';
+      case 'high':
+        return 'bg-pink-100 text-pink-800';
+      case 'urgent':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Mock data for comments and files (you can replace with real data)
+  const commentCount = Math.floor(Math.random() * 15) + 1;
+  const fileCount = Math.floor(Math.random() * 5);
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white/90 backdrop-blur-sm rounded-2xl border border-white/30 p-4 cursor-grab active:cursor-grabbing shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-1 ${
+      className={`bg-white rounded-2xl border border-gray-200 p-4 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 ${
         isDragging ? 'opacity-60 scale-105 shadow-2xl' : ''
       } ${
         overdueInfo.isOverdue 
@@ -62,91 +79,61 @@ export function KanbanCard({ task }: KanbanCardProps) {
       }`}
     >
       <div className="space-y-3">
-        {/* Header */}
+        {/* Header with Priority and Options */}
         <div className="flex items-start justify-between">
-          <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
-            {task.title}
-          </h4>
-          <div className="flex items-center space-x-1">
-            {overdueInfo.isOverdue && (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                overdueInfo.daysOverdue <= 1 ? 'bg-yellow-100 text-yellow-800' :
-                overdueInfo.daysOverdue <= 3 ? 'bg-orange-100 text-orange-800' :
-                'bg-red-100 text-red-800'
-              }`}>
-                {overdueInfo.daysOverdue}d
-              </span>
-            )}
-            <TaskPriorityBadge priority={task.priority} />
+          <div className="flex items-center space-x-2">
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityBadge(task.priority)}`}>
+              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+            </span>
           </div>
+          <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+            <MoreVertical className="h-4 w-4 text-gray-500" />
+          </button>
         </div>
+
+        {/* Title */}
+        <h4 className="text-sm font-semibold text-gray-900 line-clamp-2">
+          {task.title}
+        </h4>
 
         {/* Description */}
         <p className="text-xs text-gray-600 line-clamp-2">
           {task.description}
         </p>
 
-        {/* Project */}
-        {project && (
-          <div className="flex items-center space-x-2 text-xs text-gray-500">
-            <span 
-              className="w-2 h-2 rounded-full" 
-              style={{ backgroundColor: project.color }}
-            />
-            <span>{project.name}</span>
+        {/* Assigned Users - Avatar style */}
+        {task.assignee && (
+          <div className="flex items-center space-x-1">
+            <div className="flex -space-x-1">
+              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-medium">
+                {task.assignee.name.charAt(0).toUpperCase()}
+              </div>
+              {/* Add more avatars if there are multiple assignees */}
+              {task.assignee.name === 'John Doe' && (
+                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
+                  J
+                </div>
+              )}
+              {task.assignee.name === 'Jane Smith' && (
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-medium">
+                  J
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Tags */}
-        {task.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {task.tags.slice(0, 3).map((tag, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-50/70 backdrop-blur-sm text-red-600 border border-red-200/30 shadow-sm"
-              >
-                {tag}
-              </span>
-            ))}
-            {task.tags.length > 3 && (
-              <span className="text-xs text-gray-400">
-                +{task.tags.length - 3} more
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Footer */}
+        {/* Footer with Comments and Files */}
         <div className="flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center space-x-2">
-            {task.assignee && (
-              <div className="flex items-center space-x-1">
-                <User className="h-3 w-3" />
-                <span>{task.assignee.name}</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            {task.estimatedHours && (
-              <div className="flex items-center space-x-1">
-                <Clock className="h-3 w-3" />
-                <span>{task.estimatedHours}h</span>
-              </div>
-            )}
-            {task.dueDate && (
-              <div className={`flex items-center space-x-1 ${
-                overdueInfo.isOverdue ? 'text-red-600' : ''
-              }`}>
-                <Calendar className="h-3 w-3" />
-                <span>
-                  {overdueInfo.isOverdue 
-                    ? `${overdueInfo.daysOverdue}d overdue`
-                    : format(new Date(task.dueDate), 'MMM d')
-                  }
-                </span>
-              </div>
-            )}
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1">
+              <MessageCircle className="h-3 w-3" />
+              <span>{commentCount} comments</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <FileText className="h-3 w-3" />
+              <span>{fileCount} files</span>
+            </div>
           </div>
         </div>
       </div>

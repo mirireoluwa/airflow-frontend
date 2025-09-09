@@ -6,7 +6,11 @@ import { Layout } from './components/layout/Layout';
 import { Dashboard } from './pages/dashboard/Dashboard';
 import { Projects } from './pages/projects/Projects';
 import { ProjectDetail } from './pages/projects/ProjectDetail';
+import { ProjectEditPage } from './pages/projects/ProjectEditPage';
+import { CreateProjectPage } from './pages/projects/CreateProjectPage';
 import { Tasks } from './pages/tasks/Tasks';
+import { TaskDetailPage } from './pages/tasks/TaskDetailPage';
+import { CreateTaskPage } from './pages/tasks/CreateTaskPage';
 import { Kanban } from './pages/tasks/Kanban';
 import { Analytics } from './pages/analytics/Analytics';
 import { Search } from './pages/search/Search';
@@ -14,6 +18,7 @@ import { Settings } from './pages/settings/Settings';
 import { UserProfile } from './pages/users/UserProfile';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
@@ -110,10 +115,28 @@ function ProtectedRoutes() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/create" element={<CreateProjectPage />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/projects/:id/edit" element={<ProjectEditPage />} />
         <Route path="/tasks" element={<Tasks />} />
-        <Route path="/tasks/kanban" element={<Kanban />} />
-        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/tasks/create" element={<CreateTaskPage />} />
+        <Route path="/tasks/:id" element={<TaskDetailPage />} />
+        <Route 
+          path="/tasks/kanban" 
+          element={
+            <ProtectedRoute requiredRole="kanban">
+              <Kanban />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/analytics" 
+          element={
+            <ProtectedRoute requiredRole="analytics">
+              <Analytics />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="/search" element={<Search />} />
         <Route path="/users/:userId" element={<UserProfile />} />
         <Route path="/settings" element={<Settings />} />

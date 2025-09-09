@@ -36,6 +36,8 @@ export interface Task {
   tags: string[];
   attachments?: string[];
   comments: Comment[];
+  checklist: ChecklistItem[];
+  isBlocked?: boolean; // Computed property - true if any checklist items are blocked
 }
 
 export interface Project {
@@ -62,14 +64,38 @@ export interface Comment {
   updatedAt?: Date;
 }
 
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  completedBy?: User;
+  completedAt?: Date;
+  assignee?: User;
+  estimatedHours?: number;
+  actualHours?: number;
+  dependencies: string[]; // IDs of other checklist items that must be completed first
+  blockedBy: string[]; // IDs of checklist items that are blocking this one
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ChecklistDependency {
+  id: string;
+  fromItemId: string; // The item that must be completed first
+  toItemId: string;   // The item that depends on the first
+  createdAt: Date;
+}
+
 export interface Activity {
   id: string;
-  type: 'task_created' | 'task_updated' | 'task_completed' | 'project_created' | 'project_updated' | 'comment_added';
+  type: 'task_created' | 'task_updated' | 'task_completed' | 'project_created' | 'project_updated' | 'comment_added' | 'checklist_item_created' | 'checklist_item_completed' | 'checklist_item_updated';
   title: string;
   description: string;
   user: User;
   taskId?: string;
   projectId?: string;
+  checklistItemId?: string;
   createdAt: Date;
 }
 

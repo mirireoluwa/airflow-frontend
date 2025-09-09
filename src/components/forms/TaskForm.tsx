@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
+import { getAssignableUsers } from '../../utils/roleUtils';
 import type { Task } from '../../types';
 import { useAirflow } from '../../context/AirflowContext';
 
@@ -74,9 +75,10 @@ export function TaskForm({ task, onSubmit, onCancel, defaultAssignee, showAssign
     }))
   ];
 
+  const assignableUsers = getAssignableUsers(state.currentUser, state.users);
   const userOptions = [
     { value: '', label: 'Unassigned' },
-    ...state.users.map(user => ({
+    ...assignableUsers.map(user => ({
       value: user.id,
       label: user.name
     }))

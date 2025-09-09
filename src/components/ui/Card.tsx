@@ -26,8 +26,8 @@ export function Card({ className, children, variant = 'elevated', ...props }: Ca
     <div
       className={cn(
         variant === 'elevated'
-          ? 'rounded-2xl border border-white/30 bg-white/90 backdrop-blur-xl shadow-lg transition-all duration-300 ease-out hover:shadow-xl hover:-translate-y-1'
-          : 'rounded-lg border border-gray-200 bg-white shadow-sm',
+          ? 'rounded-2xl border border-white/30 bg-white/90 backdrop-blur-xl'
+          : 'rounded-lg border border-gray-200 bg-white',
         className
       )}
       {...props}

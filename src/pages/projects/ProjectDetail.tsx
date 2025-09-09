@@ -16,9 +16,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { TaskCard } from '../../components/tasks/TaskCard';
-
-import type { TaskStatus, TaskPriority } from '../../types';
+import { EnhancedTaskCard } from '../../components/tasks/EnhancedTaskCard';
+import { canAccessTaskDetails } from '../../utils/roleUtils';
+import type { TaskStatus, TaskPriority, Task } from '../../types';
 
 export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +29,7 @@ export function ProjectDetail() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | ''>('');
+  // Removed modal states - using pages instead
 
   const project = state.projects.find(p => p.id === id);
   const projectTasks = useMemo(() => {
@@ -84,6 +85,20 @@ export function ProjectDetail() {
     overdue: projectTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'done').length
   };
 
+  const handleCreateTask = () => {
+    navigate(`/tasks/create?projectId=${project!.id}`);
+  };
+
+  const handleTaskClick = (task: Task) => {
+    if (canAccessTaskDetails(state.currentUser, task)) {
+      navigate(`/tasks/${task.id}`);
+    }
+  };
+
+  const handleEditTask = (task: Task) => {
+    navigate(`/tasks/${task.id}`);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -101,6 +116,10 @@ export function ProjectDetail() {
             <p className="text-lg text-gray-600">{project.description}</p>
           </div>
         </div>
+        <Button onClick={handleCreateTask}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Task
+        </Button>
       </div>
 
       {/* Project Stats */}
@@ -203,7 +222,7 @@ export function ProjectDetail() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <h2 className="text-2xl font-bold text-gray-900">Tasks</h2>
           <div className="flex items-center space-x-4">
-            <Button variant="primary">
+            <Button variant="primary" onClick={handleCreateTask}>
               <Plus className="h-5 w-5 mr-2" />
               Add Task
             </Button>
@@ -293,11 +312,19 @@ export function ProjectDetail() {
               : 'space-y-4'
           }>
             {filteredTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <EnhancedTaskCard 
+                key={task.id} 
+                task={task} 
+                onClick={handleTaskClick}
+                onEdit={handleEditTask}
+                showProject={false}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* All modals removed - using pages instead */}
     </div>
   );
 }

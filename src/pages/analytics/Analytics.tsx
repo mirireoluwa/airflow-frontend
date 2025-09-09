@@ -10,28 +10,10 @@ import { TrendingUp, Clock, CheckSquare, AlertTriangle } from 'lucide-react';
 const COLORS = ['#E60000', '#10B981', '#F59E0B', '#EF4444'];
 
 export function Analytics() {
-  const { state, addNotification } = useAirflow();
+  const { state } = useAirflow();
   const stats = useDashboardStats();
 
-  // Add notification when analytics are viewed (only once per session)
-  useEffect(() => {
-    if (state.currentUser) {
-      const notificationKey = `analytics_viewed_${state.currentUser.id}`;
-      const hasViewed = sessionStorage.getItem(notificationKey);
-      
-      if (!hasViewed) {
-        addNotification({
-          title: 'Analytics Viewed',
-          message: 'You viewed the analytics dashboard',
-          type: 'info',
-          read: false,
-          userId: state.currentUser.id,
-          actionUrl: '/analytics'
-        });
-        sessionStorage.setItem(notificationKey, 'true');
-      }
-    }
-  }, [state.currentUser]);
+  // Removed analytics view notification - not essential
 
   // Prepare data for charts
   const statusData = [

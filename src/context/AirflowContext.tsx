@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { getOverdueTasksForUser, getOverdueTasksForManager } from '../utils/overdueTasks';
-import type { AppState, Project, Task, User, Activity, Notification } from '../types';
+import type { AppState, Project, Task, User, Activity, Notification, ChecklistItem } from '../types';
 
 interface AirflowContextType {
   state: AppState;
@@ -28,6 +28,15 @@ interface AirflowContextType {
   // Scope helpers
   getScopedUsers: () => User[];
   getScopedTasks: () => Task[];
+  // Checklist helpers
+  addChecklistItem: (taskId: string, item: Omit<ChecklistItem, 'id' | 'createdAt' | 'updatedAt' | 'dependencies' | 'blockedBy'>) => void;
+  updateChecklistItem: (taskId: string, itemId: string, updates: Partial<ChecklistItem>) => void;
+  deleteChecklistItem: (taskId: string, itemId: string) => void;
+  toggleChecklistItem: (taskId: string, itemId: string) => void;
+  addChecklistDependency: (taskId: string, fromItemId: string, toItemId: string) => void;
+  removeChecklistDependency: (taskId: string, fromItemId: string, toItemId: string) => void;
+  validateChecklistDependencies: (taskId: string) => { isValid: boolean; errors: string[] };
+  getBlockedChecklistItems: (taskId: string) => ChecklistItem[];
 }
 
 type AirflowAction =
@@ -47,7 +56,13 @@ type AirflowAction =
   | { type: 'ADD_NOTIFICATION'; payload: Notification }
   | { type: 'SET_NOTIFICATIONS'; payload: Notification[] }
   | { type: 'MARK_NOTIFICATION_READ'; payload: string }
-  | { type: 'CLEAR_NOTIFICATIONS' };
+  | { type: 'CLEAR_NOTIFICATIONS' }
+  | { type: 'ADD_CHECKLIST_ITEM'; payload: { taskId: string; item: ChecklistItem } }
+  | { type: 'UPDATE_CHECKLIST_ITEM'; payload: { taskId: string; itemId: string; updates: Partial<ChecklistItem> } }
+  | { type: 'DELETE_CHECKLIST_ITEM'; payload: { taskId: string; itemId: string } }
+  | { type: 'TOGGLE_CHECKLIST_ITEM'; payload: { taskId: string; itemId: string } }
+  | { type: 'ADD_CHECKLIST_DEPENDENCY'; payload: { taskId: string; fromItemId: string; toItemId: string } }
+  | { type: 'REMOVE_CHECKLIST_DEPENDENCY'; payload: { taskId: string; fromItemId: string; toItemId: string } };
 
 const initialState: AppState = {
   projects: [],
@@ -130,6 +145,119 @@ function airflowReducer(state: AppState, action: AirflowAction): AppState {
       return {
         ...state,
         notifications: state.notifications.filter(n => n.userId !== state.currentUser?.id)
+      };
+    case 'ADD_CHECKLIST_ITEM':
+      return {
+        ...state,
+        tasks: state.tasks.map(task =>
+          task.id === action.payload.taskId
+            ? { ...task, checklist: [...task.checklist, action.payload.item] }
+            : task
+        )
+      };
+    case 'UPDATE_CHECKLIST_ITEM':
+      return {
+        ...state,
+        tasks: state.tasks.map(task =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                checklist: task.checklist.map(item =>
+                  item.id === action.payload.itemId
+                    ? { ...item, ...action.payload.updates, updatedAt: new Date() }
+                    : item
+                )
+              }
+            : task
+        )
+      };
+    case 'DELETE_CHECKLIST_ITEM':
+      return {
+        ...state,
+        tasks: state.tasks.map(task =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                checklist: task.checklist.filter(item => item.id !== action.payload.itemId)
+              }
+            : task
+        )
+      };
+    case 'TOGGLE_CHECKLIST_ITEM':
+      return {
+        ...state,
+        tasks: state.tasks.map(task =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                checklist: task.checklist.map(item =>
+                  item.id === action.payload.itemId
+                    ? {
+                        ...item,
+                        completed: !item.completed,
+                        completedBy: !item.completed ? state.currentUser || undefined : undefined,
+                        completedAt: !item.completed ? new Date() : undefined,
+                        updatedAt: new Date()
+                      }
+                    : item
+                )
+              }
+            : task
+        )
+      };
+    case 'ADD_CHECKLIST_DEPENDENCY':
+      return {
+        ...state,
+        tasks: state.tasks.map(task =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                checklist: task.checklist.map(item => {
+                  if (item.id === action.payload.toItemId) {
+                    return {
+                      ...item,
+                      dependencies: [...item.dependencies, action.payload.fromItemId],
+                      updatedAt: new Date()
+                    };
+                  } else if (item.id === action.payload.fromItemId) {
+                    return {
+                      ...item,
+                      blockedBy: [...item.blockedBy, action.payload.toItemId],
+                      updatedAt: new Date()
+                    };
+                  }
+                  return item;
+                })
+              }
+            : task
+        )
+      };
+    case 'REMOVE_CHECKLIST_DEPENDENCY':
+      return {
+        ...state,
+        tasks: state.tasks.map(task =>
+          task.id === action.payload.taskId
+            ? {
+                ...task,
+                checklist: task.checklist.map(item => {
+                  if (item.id === action.payload.toItemId) {
+                    return {
+                      ...item,
+                      dependencies: item.dependencies.filter(dep => dep !== action.payload.fromItemId),
+                      updatedAt: new Date()
+                    };
+                  } else if (item.id === action.payload.fromItemId) {
+                    return {
+                      ...item,
+                      blockedBy: item.blockedBy.filter(blocked => blocked !== action.payload.toItemId),
+                      updatedAt: new Date()
+                    };
+                  }
+                  return item;
+                })
+              }
+            : task
+        )
       };
     default:
       return state;
@@ -215,6 +343,13 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     if (state.currentUser?.role === 'employee') {
       enforcedAssignee = state.currentUser;
     }
+    
+    // Prevent managers from assigning tasks to admins
+    if (state.currentUser?.role === 'manager' && enforcedAssignee?.role === 'admin') {
+      console.warn('Managers cannot assign tasks to admins');
+      enforcedAssignee = undefined;
+    }
+    
     if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.role === 'manager') && enforcedAssignee) {
       if (state.currentUser.department && enforcedAssignee.department && state.currentUser.department !== enforcedAssignee.department) {
         // If cross-department assignment, block by scoping to same department
@@ -228,7 +363,8 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
       id: generateId(),
       createdAt: new Date(),
       updatedAt: new Date(),
-      comments: []
+      comments: [],
+      checklist: []
     };
     dispatch({ type: 'ADD_TASK', payload: task });
     addActivity({
@@ -378,6 +514,11 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
           } catch (e) {
             console.error('Error parsing stored user:', e);
           }
+        } else {
+          // For development/testing - set a default user if none exists
+          const defaultUser = sampleUsers[2]; // Bob Johnson (employee)
+          dispatch({ type: 'SET_CURRENT_USER', payload: defaultUser });
+          localStorage.setItem('airflow_current_user', JSON.stringify(defaultUser));
         }
       } catch (error) {
         console.error('Error loading sample data:', error);
@@ -499,17 +640,7 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     const updatedUsers = users.map((u: User) => u.id === state.currentUser?.id ? updatedUser : u);
     localStorage.setItem('airflow_users', JSON.stringify(updatedUsers));
     
-    // Add notification for profile update (essential)
-    addNotification({
-      title: 'Profile Updated',
-      message: 'Your profile has been successfully updated.',
-      type: 'success',
-      read: false,
-      userId: state.currentUser.id,
-      actionUrl: '/settings'
-    });
-    
-    // Removed excessive profile update notifications - not essential
+    // Removed profile update notification - not essential
   };
 
   const updateUserPassword: AirflowContextType['updateUserPassword'] = (currentPassword, newPassword) => {
@@ -611,6 +742,164 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     return state.tasks;
   };
 
+  // Checklist helpers
+  const addChecklistItem: AirflowContextType['addChecklistItem'] = (taskId, itemData) => {
+    const item: ChecklistItem = {
+      ...itemData,
+      id: generateId(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      dependencies: [],
+      blockedBy: []
+    };
+    
+    dispatch({ type: 'ADD_CHECKLIST_ITEM', payload: { taskId, item } });
+    
+    addActivity({
+      type: 'checklist_item_created',
+      title: 'Checklist Item Added',
+      description: `Added "${item.title}" to checklist`,
+      user: state.currentUser ?? defaultUser,
+      taskId,
+      checklistItemId: item.id
+    });
+  };
+
+  const updateChecklistItem: AirflowContextType['updateChecklistItem'] = (taskId, itemId, updates) => {
+    dispatch({ type: 'UPDATE_CHECKLIST_ITEM', payload: { taskId, itemId, updates } });
+    
+    addActivity({
+      type: 'checklist_item_updated',
+      title: 'Checklist Item Updated',
+      description: `Updated checklist item`,
+      user: state.currentUser ?? defaultUser,
+      taskId,
+      checklistItemId: itemId
+    });
+  };
+
+  const deleteChecklistItem: AirflowContextType['deleteChecklistItem'] = (taskId, itemId) => {
+    dispatch({ type: 'DELETE_CHECKLIST_ITEM', payload: { taskId, itemId } });
+    
+    addActivity({
+      type: 'checklist_item_updated',
+      title: 'Checklist Item Deleted',
+      description: `Deleted checklist item`,
+      user: state.currentUser ?? defaultUser,
+      taskId,
+      checklistItemId: itemId
+    });
+  };
+
+  const toggleChecklistItem: AirflowContextType['toggleChecklistItem'] = (taskId, itemId) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    const item = task?.checklist.find(i => i.id === itemId);
+    
+    if (!item) return;
+    
+    const wasCompleted = item.completed;
+    dispatch({ type: 'TOGGLE_CHECKLIST_ITEM', payload: { taskId, itemId } });
+    
+    // Add activity and notification for completion
+    if (!wasCompleted) {
+      addActivity({
+        type: 'checklist_item_completed',
+        title: 'Checklist Item Completed',
+        description: `Completed "${item.title}"`,
+        user: state.currentUser ?? defaultUser,
+        taskId,
+        checklistItemId: itemId
+      });
+      
+      // Removed checklist item completion notification - too granular
+      
+      // Check if this completion unblocks other items
+      const task = state.tasks.find(t => t.id === taskId);
+      if (task) {
+        const unblockedItems = task.checklist.filter(i => 
+          i.dependencies.includes(itemId) && 
+          i.dependencies.every(depId => 
+            task.checklist.find(dep => dep.id === depId)?.completed
+          )
+        );
+        
+        unblockedItems.forEach(unblockedItem => {
+          if (unblockedItem.assignee && unblockedItem.assignee.id !== state.currentUser?.id) {
+            addNotification({
+              title: 'Checklist Item Unblocked',
+              message: `"${unblockedItem.title}" is now available to work on`,
+              type: 'info',
+              read: false,
+              userId: unblockedItem.assignee.id,
+              actionUrl: `/tasks`
+            });
+          }
+        });
+      }
+    }
+  };
+
+  const addChecklistDependency: AirflowContextType['addChecklistDependency'] = (taskId, fromItemId, toItemId) => {
+    // Validate no circular dependency
+    const validation = validateChecklistDependencies(taskId);
+    if (!validation.isValid) {
+      throw new Error(`Cannot add dependency: ${validation.errors.join(', ')}`);
+    }
+    
+    dispatch({ type: 'ADD_CHECKLIST_DEPENDENCY', payload: { taskId, fromItemId, toItemId } });
+  };
+
+  const removeChecklistDependency: AirflowContextType['removeChecklistDependency'] = (taskId, fromItemId, toItemId) => {
+    dispatch({ type: 'REMOVE_CHECKLIST_DEPENDENCY', payload: { taskId, fromItemId, toItemId } });
+  };
+
+  const validateChecklistDependencies: AirflowContextType['validateChecklistDependencies'] = (taskId) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return { isValid: false, errors: ['Task not found'] };
+    
+    const errors: string[] = [];
+    const visited = new Set<string>();
+    const recStack = new Set<string>();
+    
+    const hasCycle = (itemId: string): boolean => {
+      if (recStack.has(itemId)) return true;
+      if (visited.has(itemId)) return false;
+      
+      visited.add(itemId);
+      recStack.add(itemId);
+      
+      const item = task.checklist.find(i => i.id === itemId);
+      if (item) {
+        for (const depId of item.dependencies) {
+          if (hasCycle(depId)) return true;
+        }
+      }
+      
+      recStack.delete(itemId);
+      return false;
+    };
+    
+    for (const item of task.checklist) {
+      if (hasCycle(item.id)) {
+        errors.push(`Circular dependency detected involving "${item.title}"`);
+      }
+    }
+    
+    return { isValid: errors.length === 0, errors };
+  };
+
+  const getBlockedChecklistItems: AirflowContextType['getBlockedChecklistItems'] = (taskId) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return [];
+    
+    return task.checklist.filter(item => 
+      !item.completed && 
+      item.dependencies.some(depId => 
+        !task.checklist.find(dep => dep.id === depId)?.completed
+      )
+    );
+  };
+
   return (
     <AirflowContext.Provider
       value={{
@@ -633,7 +922,15 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
         markNotificationAsRead,
         clearNotifications,
         getScopedUsers,
-        getScopedTasks
+        getScopedTasks,
+        addChecklistItem,
+        updateChecklistItem,
+        deleteChecklistItem,
+        toggleChecklistItem,
+        addChecklistDependency,
+        removeChecklistDependency,
+        validateChecklistDependencies,
+        getBlockedChecklistItems
       }}
     >
       {children}
