@@ -18,6 +18,7 @@ import { Settings } from './pages/settings/Settings';
 import { UserProfile } from './pages/users/UserProfile';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
+import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -70,6 +71,7 @@ function ProtectedRoutes() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="*" element={<Login />} />
       </Routes>
     );

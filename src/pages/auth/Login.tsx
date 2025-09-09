@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useAirflow } from '../../context/AirflowContext';
 import { Card, CardContent } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
-import { Modal } from '../../components/ui/Modal';
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 
 export function Login() {
   const { login } = useAirflow();
@@ -14,96 +13,133 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [forgotOpen, setForgotOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [sent, setSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    
     try {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       login({ email, password });
       navigate('/');
     } catch (err) {
       setError('Invalid email or password');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <Card variant="flat" className="w-full max-w-md">
-        <CardContent className="p-6 pt-6">
-          <div className="text-center mb-6">
-            <img src="/Airtel/Airtel_ido6_-mlV0_5.svg" alt="Airtel" className="h-10 w-auto mx-auto mb-2" />
-            <h1 className="text-2xl font-bold text-gradient">Welcome back</h1>
-            <p className="text-sm text-gray-600">Log in to continue</p>
-          </div>
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@airtel.com"
+    <div className="min-h-screen relative">
+      {/* Background image */}
+      <div className="absolute inset-0">
+        <img 
+          src="/kaleidico-26MJGnCM0Wc-unsplash.jpg" 
+          alt="Workspace" 
+          className="w-full h-full object-cover" 
+        />
+        <div className="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      {/* Centered Login Form */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-4">
+        <Card variant="flat" className="w-full max-w-md bg-white/95 backdrop-blur-sm">
+          <CardContent className="p-6 pt-6">
+          <div className="text-center mb-8">
+            <img 
+              src="/Airtel/Airtel_ido6_-mlV0_5.svg" 
+              alt="Airtel" 
+              className="h-12 w-auto mx-auto mb-4" 
             />
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
+            <p className="text-gray-600">Sign in to your account to continue</p>
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-6">
             <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                label="Email Address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@airtel.com"
+                className="pl-5"
+                required
+              />
+            </div>
+
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="pr-10"
+                placeholder="Enter your password"
+                className="pl-5 pr-10"
+                required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(p => !p)}
-                className="absolute right-3 top-8 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-2/3 mr-2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff className="h-4 w-4 m-4 mt-2" /> : <Eye className="h-4 w-4 m-4 mt-2" />}
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button type="submit" className="w-full">Log In</Button>
-            <div className="text-right">
-              <button type="button" onClick={() => setForgotOpen(true)} className="text-xs text-gray-500 hover:text-gray-700 underline mt-1">Forgot password?</button>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-red-600 hover:text-red-700 font-medium"
+              >
+                Forgot password?
+              </Link>
             </div>
+
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading || !email || !password}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Signing in...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  Sign In
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </div>
+              )}
+            </Button>
           </form>
-          <p className="text-sm text-gray-600 text-center mt-4">
-            Don't have an account? <Link to="/signup" className="text-red-600 font-medium">Sign up</Link>
-          </p>
+
+          <div className="mt-8 text-center">
+            <p className="text-gray-600">
+              Don't have an account?{' '}
+              <Link 
+                to="/signup" 
+                className="text-red-600 hover:text-red-700 font-medium transition-colors"
+              >
+                Create one here
+              </Link>
+            </p>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Forgot Password Modal */}
-      <Modal isOpen={forgotOpen} onClose={() => setForgotOpen(false)} title="Reset password">
-        {sent ? (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-700">If an account exists for {resetEmail}, you’ll receive reset instructions shortly.</p>
-            <Button className="w-full" onClick={() => setForgotOpen(false)}>Close</Button>
-          </div>
-        ) : (
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              // demo: mark as sent and store a token
-              const token = Math.random().toString(36).slice(2);
-              localStorage.setItem('airflow_reset_token', JSON.stringify({ email: resetEmail, token, createdAt: Date.now() }));
-              setSent(true);
-            }}
-          >
-            <Input
-              label="Email"
-              type="email"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              placeholder="you@airtel.com"
-            />
-            <Button type="submit" className="w-full">Send reset link</Button>
-          </form>
-        )}
-      </Modal>
+      </div>
     </div>
   );
 }
