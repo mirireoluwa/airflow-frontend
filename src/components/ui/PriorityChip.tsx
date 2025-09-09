@@ -1,4 +1,3 @@
-import React from 'react';
 import { Flag, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 

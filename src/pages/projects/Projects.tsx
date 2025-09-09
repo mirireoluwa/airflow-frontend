@@ -49,7 +49,7 @@ export function Projects() {
               project={project} 
               onClick={(project) => navigate(`/projects/${project.id}`)}
               onEdit={(project) => navigate(`/projects/${project.id}/edit`)}
-              onDelete={(projectId) => {
+              onDelete={() => {
                 if (window.confirm('Are you sure you want to delete this project?')) {
                   // Add delete logic here if needed
                 }

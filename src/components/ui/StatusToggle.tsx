@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckSquare, Clock, Eye, CheckCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 

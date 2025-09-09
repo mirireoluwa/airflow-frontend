@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckSquare, Calendar, User, Clock, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Clock, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -11,7 +11,7 @@ import { useAirflow } from '../../context/AirflowContext';
 import { getAssignableUsers } from '../../utils/roleUtils';
 import { ChecklistView } from '../../components/checklist/ChecklistView';
 import { format } from 'date-fns';
-import type { Task, TaskStatus, TaskPriority } from '../../types';
+import type { TaskStatus, TaskPriority } from '../../types';
 
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();

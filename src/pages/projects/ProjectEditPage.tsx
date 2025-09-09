@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, X, Calendar, Users, Settings, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, X } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -8,7 +8,7 @@ import { Select } from '../../components/ui/Select';
 import { ProjectStatusToggle } from '../../components/ui/ProjectStatusToggle';
 import { useAirflow } from '../../context/AirflowContext';
 import { format } from 'date-fns';
-import type { Project, ProjectStatus } from '../../types';
+import type { ProjectStatus } from '../../types';
 
 export function ProjectEditPage() {
   const { id } = useParams<{ id: string }>();

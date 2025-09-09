@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Calendar, 
   Users, 
   MoreVertical, 
   Edit, 
-  Trash2, 
-  Eye,
-  Settings,
-  CheckSquare,
-  Clock,
-  AlertCircle
+  Trash2
 } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
-import { Button } from '../ui/Button';
 import { ProjectStatusToggle } from '../ui/ProjectStatusToggle';
 import { ProgressBar } from '../ui/ProgressBar';
 import { useAirflow } from '../../context/AirflowContext';

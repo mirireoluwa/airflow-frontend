@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, CheckSquare, Calendar, User, Settings, MoreHorizontal } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, CheckSquare, Calendar, User, MoreHorizontal } from 'lucide-react';
 import { Button } from './Button';
-import { Dropdown } from './Dropdown';
 import { useNavigate } from 'react-router-dom';
 
 interface QuickActionsProps {

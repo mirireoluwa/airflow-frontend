@@ -1,4 +1,3 @@
-import React from 'react';
 import { Settings, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 

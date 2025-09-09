@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import { StatsCard } from '../../components/charts/StatsCard';

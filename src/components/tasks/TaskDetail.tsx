@@ -1,7 +1,5 @@
-import React from 'react';
-import { CheckSquare, Calendar, User, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, User, Clock, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
-import { Button } from '../ui/Button';
 import { ChecklistView } from '../checklist/ChecklistView';
 import { format } from 'date-fns';
 import type { Task } from '../../types';
@@ -12,7 +10,7 @@ interface TaskDetailProps {
   onClose: () => void;
 }
 
-export function TaskDetail({ task, onShowChecklist, onClose }: TaskDetailProps) {
+export function TaskDetail({ task }: TaskDetailProps) {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
