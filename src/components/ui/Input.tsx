@@ -8,7 +8,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   helpText?: string;
   success?: boolean;
   required?: boolean;
-  autoSave?: boolean;
+  autoSave?: string;
   autoSaveDelay?: number;
 }
 

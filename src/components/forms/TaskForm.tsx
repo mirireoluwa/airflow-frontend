@@ -55,7 +55,6 @@ export function TaskForm({ task, onSubmit, onCancel, defaultAssignee, showAssign
     register,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors }
   } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),

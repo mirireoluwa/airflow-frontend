@@ -4,13 +4,13 @@ import { Search as SearchIcon, FolderOpen, CheckSquare, User as UserIcon } from 
 import { useAirflow } from '../../context/AirflowContext';
 import { getAccessibleTasks, canAccessProjects } from '../../utils/roleUtils';
 import { Card, CardContent } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
+// import { Button } from '../../components/ui/Button';
+// import { Input } from '../../components/ui/Input';
 
 
 export function Search() {
-  const { state, getScopedTasks } = useAirflow();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { state } = useAirflow();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const navigate = useNavigate();
   
@@ -36,7 +36,7 @@ export function Search() {
     const tasks = accessibleTasks.filter(task =>
       task.title.toLowerCase().includes(searchTerm) ||
       task.description.toLowerCase().includes(searchTerm) ||
-      (task.tags && task.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
+      (task.tags && task.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm)))
     );
 
     const users = state.users

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, X, Trash2, Edit, Archive, MoreHorizontal } from 'lucide-react';
+import { Check, X, MoreHorizontal } from 'lucide-react';
 import { Button } from './Button';
 import { Card, CardContent } from './Card';
 
@@ -35,7 +35,7 @@ export function BulkActions({
     return null;
   }
 
-  const allSelected = selectedItems.length === totalItems;
+  // const allSelected = selectedItems.length === totalItems;
   const someSelected = selectedItems.length > 0 && selectedItems.length < totalItems;
 
   return (

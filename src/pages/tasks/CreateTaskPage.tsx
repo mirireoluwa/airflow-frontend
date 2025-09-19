@@ -29,7 +29,7 @@ export function CreateTaskPage() {
   const [dueDateError, setDueDateError] = useState('');
 
   // Get the selected project to validate due date
-  const selectedProject = state.projects.find(p => p.id === (projectId || formData.projectId));
+  const selectedProject = state.projects.find(p => p.id === projectId);
 
   const validateDueDate = (dueDate: string) => {
     if (!dueDate) {
@@ -245,7 +245,7 @@ export function CreateTaskPage() {
                   Project
                 </label>
                 <Select
-                  value={projectId || formData.projectId || ''}
+                  value={projectId || ''}
                   onChange={handleProjectChange}
                   options={projectOptions}
                   disabled={!!projectId}

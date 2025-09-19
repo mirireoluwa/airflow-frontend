@@ -42,7 +42,7 @@ export function getOverdueTasksForManager(managerId: string, tasks: Task[], user
   // Get all users under this manager's supervision
   const supervisedUsers = users.filter(user => {
     if (manager.role === 'admin') return true; // Admin sees all
-    if (manager.role === 'manager' && user.department === manager.department) return true;
+    if ((manager.role === 'project_manager' || manager.role === 'functional_manager') && user.department === manager.department) return true;
     return false;
   });
 
