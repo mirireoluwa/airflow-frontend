@@ -19,7 +19,6 @@ interface AirflowContextType {
   logout: () => void;
   clearUsers: () => void;
   deleteCurrentUser: () => void;
-  pruneUsersToDefaults: () => Promise<void>;
   // User profile helpers
   updateUserProfile: (updates: Partial<User>) => void;
   updateUserPassword: (currentPassword: string, newPassword: string) => void;
@@ -782,68 +781,7 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('airflow_current_user');
   };
 
-  const pruneUsersToDefaults: AirflowContextType['pruneUsersToDefaults'] = async () => {
-    try {
-      const { sampleUsers } = await import('../utils/sampleData');
-      const allowedEmails = new Set(sampleUsers.map(u => u.email.toLowerCase()));
 
-      // Users
-      const prunedUsers = state.users.filter(u => allowedEmails.has(u.email.toLowerCase()));
-      dispatch({ type: 'SET_USERS', payload: prunedUsers });
-      localStorage.setItem('airflow_users', JSON.stringify(prunedUsers));
-
-      // Passwords
-      const pwdRaw = localStorage.getItem('airflow_passwords');
-      const passwords: Record<string, string> = pwdRaw ? JSON.parse(pwdRaw) : {};
-      const prunedPasswords: Record<string, string> = {};
-      Object.keys(passwords).forEach(email => {
-        if (allowedEmails.has(email.toLowerCase())) {
-          prunedPasswords[email] = passwords[email];
-        }
-      });
-      localStorage.setItem('airflow_passwords', JSON.stringify(prunedPasswords));
-
-      // Notifications
-      const storedNotifications = JSON.parse(localStorage.getItem('airflow_notifications') || '[]');
-      const allowedIds = new Set(prunedUsers.map(u => u.id));
-      const filteredNotifications = storedNotifications.filter((n: Notification) => allowedIds.has(n.userId));
-      localStorage.setItem('airflow_notifications', JSON.stringify(filteredNotifications));
-      dispatch({ type: 'SET_NOTIFICATIONS', payload: filteredNotifications });
-
-      // Projects: drop members not allowed; if owner not allowed, set to first sample user
-      const fallbackOwner = sampleUsers[0];
-      const updatedProjects: Project[] = state.projects.map(p => {
-        const newMembers = p.members.filter(m => allowedIds.has(m.id));
-        const newOwner = allowedIds.has(p.owner.id) ? p.owner : fallbackOwner;
-        return { ...p, owner: newOwner, members: newMembers, updatedAt: new Date() };
-      });
-      dispatch({ type: 'SET_PROJECTS', payload: updatedProjects });
-
-      // Tasks: nullify assignee if not allowed; if reporter not allowed, set to project owner
-      const projectIdToOwner: Record<string, User> = {};
-      updatedProjects.forEach(p => { projectIdToOwner[p.id] = p.owner; });
-      const updatedTasks: Task[] = state.tasks.map(t => {
-        const newAssignee = t.assignee && allowedIds.has(t.assignee.id) ? t.assignee : undefined;
-        const newReporter = allowedIds.has(t.reporter.id) ? t.reporter : (projectIdToOwner[t.projectId] || fallbackOwner);
-        return { ...t, assignee: newAssignee, reporter: newReporter, updatedAt: new Date() };
-      });
-      dispatch({ type: 'SET_TASKS', payload: updatedTasks });
-
-      // Current user fallback if needed
-      if (!state.currentUser || !allowedIds.has(state.currentUser.id)) {
-        const fallback = sampleUsers[2]; // Bob Johnson (employee)
-        dispatch({ type: 'SET_CURRENT_USER', payload: fallback });
-        localStorage.setItem('airflow_current_user', JSON.stringify(fallback));
-      }
-    } catch (e) {
-      console.error('Failed to prune users to defaults', e);
-    }
-  };
-
-  // Expose maintenance helper for debugging via console
-  useEffect(() => {
-    (window as any).pruneUsersToDefaults = pruneUsersToDefaults;
-  }, [pruneUsersToDefaults]);
 
   // User profile helpers
   const updateUserProfile: AirflowContextType['updateUserProfile'] = (updates) => {
@@ -1298,7 +1236,6 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
         logout,
         clearUsers,
         deleteCurrentUser,
-        pruneUsersToDefaults,
         updateUserProfile,
         updateUserPassword,
         addNotification,

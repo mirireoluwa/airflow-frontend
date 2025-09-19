@@ -19,7 +19,7 @@ import type { UserStatus } from '../../types';
 import { useNavigate } from 'react-router-dom';
 
 export function Settings() {
-  const { state, updateUserProfile, updateUserPassword, deleteCurrentUser, pruneUsersToDefaults } = useAirflow();
+  const { state, updateUserProfile, updateUserPassword, deleteCurrentUser } = useAirflow();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   
@@ -52,7 +52,6 @@ export function Settings() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isPruning, setIsPruning] = useState(false);
   const [confirmText, setConfirmText] = useState('');
 
   // Interest management
@@ -185,19 +184,6 @@ export function Settings() {
     }
   };
 
-  const handlePruneDefaults = async () => {
-    setIsPruning(true);
-    try {
-      await pruneUsersToDefaults();
-      setMessage({ type: 'success', text: 'Users pruned to defaults successfully.' });
-      setTimeout(() => setMessage(null), 3000);
-    } catch (e) {
-      setMessage({ type: 'error', text: 'Failed to prune users. Please try again.' });
-      setTimeout(() => setMessage(null), 3000);
-    } finally {
-      setIsPruning(false);
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -568,19 +554,6 @@ export function Settings() {
               </div>
             </div>
 
-            {/* Temporary: Reset users to defaults */}
-            <div className="space-y-3 p-4 border border-yellow-200 rounded-xl bg-yellow-50">
-              <h4 className="font-semibold text-yellow-800">Temporary: Reset Users to Defaults</h4>
-              <p className="text-sm text-yellow-800">Removes all non-default users, updates projects/tasks accordingly. For local cleanup during testing.</p>
-              <Button 
-                variant="outline" 
-                onClick={handlePruneDefaults}
-                loading={isPruning}
-                loadingText="Resetting..."
-              >
-                Reset to Default Users
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
