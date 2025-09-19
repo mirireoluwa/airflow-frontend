@@ -16,6 +16,7 @@ import { Analytics } from './pages/analytics/Analytics';
 import { Search } from './pages/search/Search';
 import { Settings } from './pages/settings/Settings';
 import { UserProfile } from './pages/users/UserProfile';
+import { DocumentPage } from './pages/documents/DocumentPage';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
@@ -116,10 +117,38 @@ function ProtectedRoutes() {
     <Layout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/create" element={<CreateProjectPage />} />
-        <Route path="/projects/:id" element={<ProjectDetail />} />
-        <Route path="/projects/:id/edit" element={<ProjectEditPage />} />
+        <Route 
+          path="/projects" 
+          element={
+            <ProtectedRoute requiredRole="projects">
+              <Projects />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/projects/create" 
+          element={
+            <ProtectedRoute requiredRole="projects">
+              <CreateProjectPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/projects/:id" 
+          element={
+            <ProtectedRoute requiredRole="projects">
+              <ProjectDetail />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/projects/:id/edit" 
+          element={
+            <ProtectedRoute requiredRole="projects">
+              <ProjectEditPage />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/tasks/create" element={<CreateTaskPage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />
@@ -141,6 +170,7 @@ function ProtectedRoutes() {
         />
         <Route path="/search" element={<Search />} />
         <Route path="/users/:userId" element={<UserProfile />} />
+        <Route path="/projects/:projectId/documents/:documentId" element={<DocumentPage />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </Layout>

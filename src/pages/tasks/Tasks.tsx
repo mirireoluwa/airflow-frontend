@@ -1,43 +1,60 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, LayoutGrid, List, CheckSquare } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, LayoutGrid, List, CheckSquare, AlertTriangle, X } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { EnhancedTaskCard } from '../../components/tasks/EnhancedTaskCard';
 import { useAirflow } from '../../context/AirflowContext';
-import { canAccessTaskDetails } from '../../utils/roleUtils';
+import { canAccessTaskDetails, canEditTask, getAccessibleTasks } from '../../utils/roleUtils';
 import type { Task, TaskStatus, TaskPriority } from '../../types';
 
 export function Tasks() {
   const { state, deleteTask } = useAirflow();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | ''>('');
   const [projectFilter, setProjectFilter] = useState('');
+  const [overdueFilter, setOverdueFilter] = useState(false);
 
-  // Filter tasks based on current filters
+  // Handle URL filter parameter
+  useEffect(() => {
+    const filter = searchParams.get('filter');
+    if (filter === 'overdue') {
+      setOverdueFilter(true);
+    }
+  }, [searchParams]);
+
+  // Filter tasks based on current filters and user access
   const filteredTasks = useMemo(() => {
-    return state.tasks.filter(task => {
+    // First, get only tasks the user can access
+    const accessibleTasks = getAccessibleTasks(state.currentUser, state.tasks);
+    
+    return accessibleTasks.filter(task => {
       const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            task.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = !statusFilter || task.status === statusFilter;
       const matchesPriority = !priorityFilter || task.priority === priorityFilter;
       const matchesProject = !projectFilter || task.projectId === projectFilter;
+      
+      // Check if task is overdue
+      const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+      const matchesOverdue = !overdueFilter || isOverdue;
 
-      return matchesSearch && matchesStatus && matchesPriority && matchesProject;
+      return matchesSearch && matchesStatus && matchesPriority && matchesProject && matchesOverdue;
     });
-  }, [state.tasks, searchTerm, statusFilter, priorityFilter, projectFilter]);
+  }, [state.tasks, state.currentUser, searchTerm, statusFilter, priorityFilter, projectFilter, overdueFilter]);
 
   const handleCreateTask = () => {
     navigate('/tasks/create');
   };
 
   const handleEditTask = (task: Task) => {
-    navigate(`/tasks/${task.id}`);
+    navigate(`/tasks/${task.id}?edit=true`);
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -50,6 +67,18 @@ export function Tasks() {
     if (canAccessTaskDetails(state.currentUser, task)) {
       navigate(`/tasks/${task.id}`);
     }
+  };
+
+  const handleOverdueFilterToggle = () => {
+    setOverdueFilter(!overdueFilter);
+    // Update URL parameters
+    const newParams = new URLSearchParams(searchParams);
+    if (!overdueFilter) {
+      newParams.set('filter', 'overdue');
+    } else {
+      newParams.delete('filter');
+    }
+    setSearchParams(newParams);
   };
 
   const statusOptions = [
@@ -85,8 +114,29 @@ export function Tasks() {
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
         <div className="text-center lg:text-left">
-          <h1 className="text-4xl font-bold text-gradient mb-2">Tasks</h1>
-          <p className="text-lg text-gray-600">Manage and track all your tasks.</p>
+          <div className="flex items-center space-x-3 mb-2">
+            <h1 className="text-4xl font-bold text-gradient">
+              {overdueFilter ? 'Overdue Tasks' : 'Tasks'}
+            </h1>
+            {overdueFilter && (
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-8 w-8 text-red-600" />
+                <button
+                  onClick={handleOverdueFilterToggle}
+                  className="p-1 hover:bg-red-100 rounded-full transition-colors touch-target"
+                  aria-label="Clear overdue filter"
+                >
+                  <X className="h-4 w-4 text-red-600" />
+                </button>
+              </div>
+            )}
+          </div>
+          <p className="text-lg text-gray-600">
+            {overdueFilter 
+              ? 'Tasks that are past their due date and need attention'
+              : 'Manage and track all your tasks.'
+            }
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
           <div className="relative">
@@ -146,12 +196,22 @@ export function Tasks() {
               onChange={(e) => setProjectFilter(e.target.value)}
             />
             <Button 
+              variant={overdueFilter ? "apple-primary" : "outline"}
+              onClick={handleOverdueFilterToggle}
+              className="flex items-center space-x-2"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              <span>{overdueFilter ? 'Hide Overdue' : 'Show Overdue'}</span>
+            </Button>
+            <Button 
               variant="outline" 
               onClick={() => {
                 setSearchTerm('');
                 setStatusFilter('');
                 setPriorityFilter('');
                 setProjectFilter('');
+                setOverdueFilter(false);
+                setSearchParams(new URLSearchParams());
               }}
             >
               Clear Filters
@@ -163,7 +223,7 @@ export function Tasks() {
       {/* Tasks Display */}
       {filteredTasks.length === 0 ? (
         <Card variant="flat">
-          <CardContent className="text-center py-12">
+          <CardContent className="text-center py-12 pt-16">
             <CheckSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               {state.tasks.length === 0 ? 'No tasks yet' : 'No tasks match your filters'}
@@ -188,7 +248,7 @@ export function Tasks() {
               key={task.id} 
               task={task} 
               onClick={handleTaskClick}
-              onEdit={handleEditTask}
+              onEdit={canEditTask(state.currentUser, task, state.users) ? handleEditTask : undefined}
               onDelete={handleDeleteTask}
               showProject={true}
             />
@@ -201,7 +261,7 @@ export function Tasks() {
               key={task.id} 
               task={task} 
               onClick={handleTaskClick}
-              onEdit={handleEditTask}
+              onEdit={canEditTask(state.currentUser, task, state.users) ? handleEditTask : undefined}
               onDelete={handleDeleteTask}
               showProject={true}
             />

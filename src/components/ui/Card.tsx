@@ -2,7 +2,7 @@ import { cn } from '../../utils/cn';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
-  variant?: 'elevated' | 'flat';
+  variant?: 'elevated' | 'flat' | 'apple' | 'apple-elevated';
 }
 
 interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -27,7 +27,13 @@ export function Card({ className, children, variant = 'elevated', ...props }: Ca
       className={cn(
         variant === 'elevated'
           ? 'rounded-2xl border border-white/30 bg-white/90 backdrop-blur-xl'
-          : 'rounded-lg border border-gray-200 bg-white',
+          : variant === 'flat'
+          ? 'rounded-lg border border-gray-200 bg-white'
+          : variant === 'apple'
+          ? 'apple-card'
+          : variant === 'apple-elevated'
+          ? 'apple-card-elevated'
+          : 'rounded-2xl border border-white/30 bg-white/90 backdrop-blur-xl',
         className
       )}
       {...props}
@@ -51,7 +57,7 @@ export function CardHeader({ className, children, ...props }: CardHeaderProps) {
 export function CardTitle({ className, children, ...props }: CardTitleProps) {
   return (
     <h3
-      className={cn('text-lg font-semibold leading-none tracking-tight text-gray-900', className)}
+      className={cn('text-title-3 font-semibold leading-none tracking-tight text-gray-900', className)}
       {...props}
     >
       {children}

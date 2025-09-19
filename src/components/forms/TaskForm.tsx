@@ -8,6 +8,7 @@ import { Button } from '../ui/Button';
 import { getAssignableUsers } from '../../utils/roleUtils';
 import type { Task } from '../../types';
 import { useAirflow } from '../../context/AirflowContext';
+import { useState, useEffect } from 'react';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Task title is required'),
@@ -47,10 +48,14 @@ const priorityOptions = [
 
 export function TaskForm({ task, onSubmit, onCancel, defaultAssignee, showAssignee = true }: TaskFormProps) {
   const { state } = useAirflow();
+  const [dueDateError, setDueDateError] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState(task?.projectId || '');
   
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors }
   } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
@@ -66,6 +71,54 @@ export function TaskForm({ task, onSubmit, onCancel, defaultAssignee, showAssign
       tags: task?.tags.join(', ') || ''
     }
   });
+
+  const watchedProjectId = watch('projectId');
+  const watchedDueDate = watch('dueDate');
+
+  // Get the selected project to validate due date
+  const selectedProject = state.projects.find(p => p.id === watchedProjectId);
+
+  const validateDueDate = (dueDate: string, projectId: string) => {
+    if (!dueDate) {
+      setDueDateError('');
+      return true;
+    }
+
+    const project = state.projects.find(p => p.id === projectId);
+    if (!project?.endDate) {
+      setDueDateError('');
+      return true;
+    }
+
+    const taskDueDate = new Date(dueDate);
+    const projectEndDate = new Date(project.endDate);
+
+    if (taskDueDate > projectEndDate) {
+      setDueDateError(`Task due date cannot be later than project end date (${projectEndDate.toLocaleDateString()})`);
+      return false;
+    }
+
+    setDueDateError('');
+    return true;
+  };
+
+  // Watch for changes in project or due date
+  useEffect(() => {
+    if (watchedProjectId !== selectedProjectId) {
+      setSelectedProjectId(watchedProjectId);
+      // Re-validate due date when project changes
+      if (watchedDueDate) {
+        validateDueDate(watchedDueDate, watchedProjectId);
+      }
+    }
+  }, [watchedProjectId, watchedDueDate, selectedProjectId]);
+
+  // Watch for due date changes
+  useEffect(() => {
+    if (watchedDueDate && watchedProjectId) {
+      validateDueDate(watchedDueDate, watchedProjectId);
+    }
+  }, [watchedDueDate, watchedProjectId]);
 
   const projectOptions = [
     { value: '', label: 'Select a project' },
@@ -85,6 +138,11 @@ export function TaskForm({ task, onSubmit, onCancel, defaultAssignee, showAssign
   ];
 
   const handleFormSubmit = (data: TaskFormData) => {
+    // Validate due date before submission
+    if (data.dueDate && !validateDueDate(data.dueDate, data.projectId)) {
+      return;
+    }
+
     onSubmit({
       ...data,
       estimatedHours: data.estimatedHours ? Number(data.estimatedHours) : undefined
@@ -149,12 +207,20 @@ export function TaskForm({ task, onSubmit, onCancel, defaultAssignee, showAssign
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Due Date (Optional)"
-          type="date"
-          {...register('dueDate')}
-          error={errors.dueDate?.message}
-        />
+        <div>
+          <Input
+            label="Due Date (Optional)"
+            type="date"
+            {...register('dueDate')}
+            error={dueDateError || errors.dueDate?.message}
+            max={selectedProject?.endDate ? new Date(selectedProject.endDate).toISOString().split('T')[0] : undefined}
+          />
+          {selectedProject?.endDate && (
+            <p className="text-xs text-gray-500 mt-1">
+              Project ends on {new Date(selectedProject.endDate).toLocaleDateString()}
+            </p>
+          )}
+        </div>
 
         <Input
           label="Estimated Hours (Optional)"

@@ -3,7 +3,7 @@ import { CheckSquare, Plus, Trash2, Edit, Save, X, AlertCircle, Clock, User, Che
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useAirflow } from '../../context/AirflowContext';
-import { canManageUsers, getAssignableUsers } from '../../utils/roleUtils';
+import { canEditTaskDependencies, canAssignMembersToProjects, getAssignableUsers } from '../../utils/roleUtils';
 import type { Task } from '../../types';
 
 interface ChecklistViewProps {
@@ -25,8 +25,11 @@ export function ChecklistView({ task }: ChecklistViewProps) {
 
   const checklist = task.checklist || [];
   const blockedItems = getBlockedChecklistItems(task.id);
-  const canManageDependencies = canManageUsers(state.currentUser);
+  const canManageDependencies = canEditTaskDependencies(state.currentUser);
+  const canAssign = canAssignMembersToProjects(state.currentUser);
   const assignableUsers = getAssignableUsers(state.currentUser, state.users);
+
+  const humanizeRole = (role: string) => role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   const handleAddItem = () => {
     if (newItemTitle.trim()) {
@@ -260,7 +263,7 @@ export function ChecklistView({ task }: ChecklistViewProps) {
               {/* Actions */}
               {!isEditing && (
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {/* Dependency Management - Only for managers and admins */}
+                  {/* Dependency Management - Only for project managers and admins */}
                   {canManageDependencies && (
                     <div className="relative">
                       <Button
@@ -324,8 +327,8 @@ export function ChecklistView({ task }: ChecklistViewProps) {
                     </div>
                   )}
 
-                  {/* Assign User - Only for managers and admins */}
-                  {canManageDependencies && (
+                  {/* Assign User - Only for functional managers and admins */}
+                  {canAssign && (
                     <div className="relative">
                       <Button
                         variant="ghost"
@@ -350,7 +353,7 @@ export function ChecklistView({ task }: ChecklistViewProps) {
                                 }`}
                               >
                                 <span>{user.name}</span>
-                                <span className="text-xs text-gray-400 capitalize">{user.role}</span>
+                                <span className="text-xs text-gray-400">{humanizeRole(user.role)}</span>
                               </button>
                             ))}
                             <button

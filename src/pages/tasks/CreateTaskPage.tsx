@@ -26,10 +26,59 @@ export function CreateTaskPage() {
     tags: ''
   });
 
+  const [dueDateError, setDueDateError] = useState('');
+
+  // Get the selected project to validate due date
+  const selectedProject = state.projects.find(p => p.id === (projectId || formData.projectId));
+
+  const validateDueDate = (dueDate: string) => {
+    if (!dueDate) {
+      setDueDateError('');
+      return true;
+    }
+
+    if (!selectedProject?.endDate) {
+      setDueDateError('');
+      return true;
+    }
+
+    const taskDueDate = new Date(dueDate);
+    const projectEndDate = new Date(selectedProject.endDate);
+
+    if (taskDueDate > projectEndDate) {
+      setDueDateError(`Task due date cannot be later than project end date (${projectEndDate.toLocaleDateString()})`);
+      return false;
+    }
+
+    setDueDateError('');
+    return true;
+  };
+
+  const handleDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDueDate = e.target.value;
+    setFormData(prev => ({ ...prev, dueDate: newDueDate }));
+    validateDueDate(newDueDate);
+  };
+
+  const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newProjectId = e.target.value;
+    setFormData(prev => ({ ...prev, projectId: newProjectId }));
+    
+    // Re-validate due date if project changes
+    if (formData.dueDate) {
+      validateDueDate(formData.dueDate);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title.trim()) return;
+
+    // Validate due date before submission
+    if (formData.dueDate && !validateDueDate(formData.dueDate)) {
+      return;
+    }
 
     const assignee = formData.assigneeId ? state.users.find(u => u.id === formData.assigneeId) : undefined;
     const tags = formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
@@ -69,7 +118,19 @@ export function CreateTaskPage() {
     { value: 'urgent', label: 'Urgent' }
   ];
 
-  const assignableUsers = getAssignableUsers(state.currentUser, state.users);
+  // Get assignable users - if projectId is provided, only show project members
+  let assignableUsers = getAssignableUsers(state.currentUser, state.users);
+  
+  if (projectId) {
+    const project = state.projects.find(p => p.id === projectId);
+    if (project) {
+      // Only show project members as assignable users
+      assignableUsers = assignableUsers.filter(user => 
+        project.members.some(member => member.id === user.id)
+      );
+    }
+  }
+  
   const userOptions = [
     { value: '', label: 'Unassigned' },
     ...assignableUsers.map(user => ({
@@ -171,6 +232,11 @@ export function CreateTaskPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, assigneeId: e.target.value }))}
                   options={userOptions}
                 />
+                {projectId && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Only project members can be assigned to this task.
+                  </p>
+                )}
               </div>
 
               {/* Project */}
@@ -179,8 +245,8 @@ export function CreateTaskPage() {
                   Project
                 </label>
                 <Select
-                  value={projectId || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, projectId: e.target.value }))}
+                  value={projectId || formData.projectId || ''}
+                  onChange={handleProjectChange}
                   options={projectOptions}
                   disabled={!!projectId}
                 />
@@ -194,8 +260,15 @@ export function CreateTaskPage() {
                 <Input
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                  onChange={handleDueDateChange}
+                  error={dueDateError}
+                  max={selectedProject?.endDate ? new Date(selectedProject.endDate).toISOString().split('T')[0] : undefined}
                 />
+                {selectedProject?.endDate && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Project ends on {new Date(selectedProject.endDate).toLocaleDateString()}
+                  </p>
+                )}
               </div>
 
               {/* Estimated Hours */}

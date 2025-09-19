@@ -11,7 +11,7 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
-  role: 'employee' | 'admin' | 'manager';
+  role: 'employee' | 'admin' | 'project_manager' | 'functional_manager';
   department?: string;
   auid?: string; // 8-digit Airtel User ID
   interests?: string[];
@@ -25,7 +25,8 @@ export interface Task {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  assignee?: User;
+  assignee?: User; // Keep for backward compatibility
+  assignees?: User[]; // New: multiple assignees
   reporter: User;
   projectId: string;
   createdAt: Date;
@@ -51,6 +52,8 @@ export interface Project {
   endDate?: Date;
   progress: number; // 0-100
   tasks: Task[];
+  comments: Comment[];
+  documents: ProjectDocument[];
   createdAt: Date;
   updatedAt: Date;
   color: string; // For visual differentiation
@@ -64,6 +67,17 @@ export interface Comment {
   updatedAt?: Date;
 }
 
+export interface ProjectDocument {
+  id: string;
+  name: string;
+  url: string;
+  size: number; // in bytes
+  type: string; // MIME type
+  uploadedBy: User;
+  uploadedAt: Date;
+  description?: string;
+}
+
 export interface ChecklistItem {
   id: string;
   title: string;
@@ -71,7 +85,8 @@ export interface ChecklistItem {
   completed: boolean;
   completedBy?: User;
   completedAt?: Date;
-  assignee?: User;
+  assignee?: User; // Keep for backward compatibility
+  assignees?: User[]; // New: multiple assignees
   estimatedHours?: number;
   actualHours?: number;
   dependencies: string[]; // IDs of other checklist items that must be completed first

@@ -18,7 +18,7 @@ import { cn } from '../../utils/cn';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { useAirflow } from '../../context/AirflowContext';
-import { canAccessAnalytics, canAccessKanban } from '../../utils/roleUtils';
+import { canAccessAnalytics, canAccessKanban, canAccessProjects } from '../../utils/roleUtils';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -115,6 +115,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                 if (item.name === 'Kanban Board') {
                   return canAccessKanban(state.currentUser);
                 }
+                if (item.name === 'Projects') {
+                  return canAccessProjects(state.currentUser);
+                }
                 return true; // All other items are accessible to all roles
               })
               .map((item) => {
@@ -126,11 +129,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                     end={item.href === '/' || item.href === '/tasks'}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center rounded-2xl text-sm font-medium transition-all duration-200 ease-out group',
-                        isCollapsed ? 'justify-center px-4 py-4' : 'space-x-4 px-4 py-3',
-                        isActive
-                          ? 'text-red-600'
-                          : 'text-gray-700 hover:text-gray-900'
+                        'apple-nav-item group',
+                        isCollapsed ? 'apple-nav-item-collapsed' : 'space-x-4 px-4 py-3',
+                        isActive && 'active'
                       )
                     }
                     onClick={() => {
@@ -142,8 +143,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                     title={isCollapsed ? item.name : undefined}
                   >
                     <Icon className={cn(
-                      'transition-transform duration-200',
-                      isCollapsed ? 'h-6 w-6' : 'h-6 w-6',
+                      'transition-transform duration-200 flex-shrink-0 h-5 w-5',
                       'group-hover:scale-110'
                     )} />
                     {!isCollapsed && <span className="font-medium">{item.name}</span>}
@@ -163,11 +163,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                   onClick={() => setShowLogoutModal(true)} 
                   className={cn(
                     "text-red-600 hover:text-red-700",
-                    isCollapsed ? "w-full justify-center p-2" : "w-full justify-start"
+                    isCollapsed ? "w-full justify-center p-2 apple-nav-item-collapsed" : "w-full justify-start"
                   )}
                   title={isCollapsed ? 'Logout' : undefined}
                 >
-                  <LogOut className={cn(isCollapsed ? "h-6 w-6" : "h-6 w-6")} />
+                  <LogOut className={cn(
+                    "transition-transform duration-200 flex-shrink-0 h-5 w-5"
+                  )} />
                   {!isCollapsed && <span className="font-medium ml-4">Logout</span>}
                 </Button>
               </div>

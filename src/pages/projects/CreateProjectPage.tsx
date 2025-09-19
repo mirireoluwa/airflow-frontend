@@ -5,9 +5,12 @@ import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { MultiSelect } from '../../components/ui/MultiSelect';
+import { DocumentUpload } from '../../components/ui/DocumentUpload';
 import { ProjectStatusToggle } from '../../components/ui/ProjectStatusToggle';
 import { useAirflow } from '../../context/AirflowContext';
-import type { ProjectStatus } from '../../types';
+import { getAssignableUsers } from '../../utils/roleUtils';
+import type { ProjectStatus, ProjectDocument } from '../../types';
 
 export function CreateProjectPage() {
   const navigate = useNavigate();
@@ -19,12 +22,14 @@ export function CreateProjectPage() {
     status: 'planning' as ProjectStatus,
     startDate: new Date().toISOString().split('T')[0], // Today's date
     endDate: '',
-    color: '#3B82F6'
+    color: '#3B82F6',
+    members: [] as string[], // Array of user IDs
+    documents: [] as ProjectDocument[] // Array of documents
   });
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | string[] | ProjectDocument[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -47,6 +52,17 @@ export function CreateProjectPage() {
     setIsLoading(true);
     
     try {
+      // Get member objects from IDs
+      const memberObjects = formData.members
+        .map(memberId => state.users.find(user => user.id === memberId))
+        .filter(Boolean) as any[];
+
+      // Update document uploader info
+      const documentsWithUploader = formData.documents.map(doc => ({
+        ...doc,
+        uploadedBy: state.currentUser!
+      }));
+
       const newProject = {
         name: formData.name,
         description: formData.description,
@@ -56,8 +72,10 @@ export function CreateProjectPage() {
         endDate: formData.endDate ? new Date(formData.endDate) : undefined,
         color: formData.color,
         progress: 0,
-        members: [], // Will be empty initially
-        tasks: [] // Will be empty initially
+        members: memberObjects,
+        tasks: [], // Will be empty initially
+        comments: [], // Will be empty initially
+        documents: documentsWithUploader
       };
       
       addProject(newProject);
@@ -195,6 +213,53 @@ export function CreateProjectPage() {
                     onChange={(e) => handleInputChange('endDate', e.target.value)}
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Team Members */}
+          <Card variant="flat">
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Members</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Add team members to this project
+                </label>
+                <MultiSelect
+                  options={getAssignableUsers(state.currentUser, state.users).map(user => ({
+                    value: user.id,
+                    label: user.name,
+                    user: user
+                  }))}
+                  value={formData.members}
+                  onChange={(values) => handleInputChange('members', values)}
+                  placeholder="Select team members..."
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Only selected members will be able to be assigned to tasks in this project.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Documents */}
+          <Card variant="flat">
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Documents</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload documents for this project
+                </label>
+                <DocumentUpload
+                  documents={formData.documents}
+                  onDocumentsChange={(documents) => handleInputChange('documents', documents)}
+                  maxFiles={10}
+                  maxSize={10}
+                  acceptedTypes={['image/*', 'application/pdf', 'text/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']}
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Upload project requirements, designs, specifications, or any other relevant documents.
+                </p>
               </div>
             </CardContent>
           </Card>

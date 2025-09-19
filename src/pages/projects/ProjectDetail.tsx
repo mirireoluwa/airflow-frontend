@@ -9,7 +9,10 @@ import {
   List,
   LayoutGrid,
   Clock,
-  AlertCircle
+  AlertCircle,
+  MessageCircle,
+  FileText,
+  X
 } from 'lucide-react';
 import { useAirflow } from '../../context/AirflowContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -17,18 +20,24 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { EnhancedTaskCard } from '../../components/tasks/EnhancedTaskCard';
-import { canAccessTaskDetails } from '../../utils/roleUtils';
-import type { TaskStatus, TaskPriority, Task } from '../../types';
+import { ProjectComments } from '../../components/projects/ProjectComments';
+import { ProjectDocuments } from '../../components/projects/ProjectDocuments';
+import { QuickCommentInput } from '../../components/projects/QuickCommentInput';
+import { canAccessTaskDetails, canEditTask } from '../../utils/roleUtils';
+import { canAssignMembersToProjects } from '../../utils/roleUtils';
+import type { TaskStatus, TaskPriority, Task, User } from '../../types';
 
 export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { state } = useAirflow();
+  const { state, addProjectComment, addProjectDocument, updateProject } = useAirflow();
   
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | ''>('');
+  const [showQuickComment, setShowQuickComment] = useState(false);
+  const [showQuickUpload, setShowQuickUpload] = useState(false);
   // Removed modal states - using pages instead
 
   const project = state.projects.find(p => p.id === id);
@@ -96,7 +105,58 @@ export function ProjectDetail() {
   };
 
   const handleEditTask = (task: Task) => {
-    navigate(`/tasks/${task.id}`);
+    navigate(`/tasks/${task.id}?edit=true`);
+  };
+
+  const handleQuickComment = (content: string) => {
+    if (project) {
+      addProjectComment(project.id, content);
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0 && project) {
+      const file = files[0];
+      
+      // Create a blob URL for the file
+      const blobUrl = URL.createObjectURL(file);
+      
+      // Log for debugging
+      console.log('Uploading file:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        url: blobUrl
+      });
+      
+      addProjectDocument(project.id, {
+        name: file.name,
+        url: blobUrl,
+        size: file.size,
+        type: file.type || 'application/octet-stream', // Fallback MIME type
+        uploadedBy: state.currentUser!,
+        description: ''
+      });
+      
+      // Close the modal
+      setShowQuickUpload(false);
+    }
+  };
+
+  // Staffing helpers (functional manager/admin only)
+  const canManageStaffing = canAssignMembersToProjects(state.currentUser);
+  const availableUsers: User[] = useMemo(() => {
+    // Functional managers see all users, admins too; PMs/employees won't see this panel
+    return state.users.filter(u => !project.members.some(m => m.id === u.id));
+  }, [state.users, project.members]);
+
+  const addMember = (user: User) => {
+    updateProject(project.id, { members: [...project.members, user] });
+  };
+
+  const removeMember = (userId: string) => {
+    updateProject(project.id, { members: project.members.filter(m => m.id !== userId) });
   };
 
   return (
@@ -217,11 +277,88 @@ export function ProjectDetail() {
         </CardContent>
       </Card>
 
+      {/* Staffing Panel (Functional Manager/Admin Only) */}
+      {canManageStaffing && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Staffing</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Current Members */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Current Members</h3>
+                <div className="space-y-2">
+                  {project.members.map(member => (
+                    <div key={member.id} className="flex items-center justify-between p-2 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+                          {member.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                          <div className="text-xs text-gray-500 capitalize">{member.role.replace('_', ' ')}</div>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => removeMember(member.id)}>
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  {project.members.length === 0 && (
+                    <div className="text-sm text-gray-500">No members yet.</div>
+                  )}
+                </div>
+              </div>
+              {/* Available Users */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Available Users</h3>
+                <div className="space-y-2 max-h-64 overflow-auto pr-1">
+                  {availableUsers.map(user => (
+                    <div key={user.id} className="flex items-center justify-between p-2 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+                          {user.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                          <div className="text-xs text-gray-500 capitalize">{user.department || 'No dept'}</div>
+                        </div>
+                      </div>
+                      <Button size="sm" onClick={() => addMember(user)}>
+                        Add
+                      </Button>
+                    </div>
+                  ))}
+                  {availableUsers.length === 0 && (
+                    <div className="text-sm text-gray-500">No available users to add.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tasks Section */}
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <h2 className="text-2xl font-bold text-gray-900">Tasks</h2>
           <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setShowQuickComment(true)}
+              className="w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+              title="Add Comment"
+            >
+              <MessageCircle className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setShowQuickUpload(true)}
+              className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+              title="Upload Document"
+            >
+              <FileText className="w-5 h-5" />
+            </button>
             <Button variant="primary" onClick={handleCreateTask}>
               <Plus className="h-5 w-5 mr-2" />
               Add Task
@@ -316,13 +453,65 @@ export function ProjectDetail() {
                 key={task.id} 
                 task={task} 
                 onClick={handleTaskClick}
-                onEdit={handleEditTask}
+                onEdit={canEditTask(state.currentUser, task, state.users) ? handleEditTask : undefined}
                 showProject={false}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Comments and Documents Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ProjectComments project={project} />
+        <ProjectDocuments project={project} />
+      </div>
+
+
+      {/* Quick Comment Modal */}
+      <QuickCommentInput
+        isOpen={showQuickComment}
+        onClose={() => setShowQuickComment(false)}
+        onAddComment={handleQuickComment}
+      />
+
+      {/* Quick Upload Modal */}
+      {showQuickUpload && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <FileText className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Upload Document</h3>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setShowQuickUpload(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">Drop files here or click to browse</p>
+                  <p className="text-sm text-gray-500">Supports images, PDFs, documents, and more</p>
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    multiple={false}
+                    accept="*/*"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowQuickUpload(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* All modals removed - using pages instead */}
     </div>

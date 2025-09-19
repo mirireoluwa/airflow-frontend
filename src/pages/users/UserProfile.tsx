@@ -55,7 +55,7 @@ export function UserProfile() {
   const currentUser = state.currentUser;
   const assignableUsers = getAssignableUsers(currentUser, state.users);
   const canAssignTasks = currentUser && 
-    (currentUser.role === 'admin' || currentUser.role === 'manager') &&
+    (currentUser.role === 'admin' || currentUser.role === 'project_manager') &&
     currentUser.department === user.department &&
     assignableUsers.some(u => u.id === user.id);
 
@@ -83,6 +83,8 @@ export function UserProfile() {
       default: return 'text-gray-600';
     }
   };
+
+  const humanizeRole = (role: string) => role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   const handleAssignTask = (data: any) => {
     const project = state.projects.find(p => p.id === data.projectId);
@@ -153,7 +155,8 @@ export function UserProfile() {
                     user.name.split(' ').map(n => n[0]).join('') || 'U'
                   )}
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{user.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">{user.name}</h2>
+                <div className="text-sm text-gray-600 mb-3">{humanizeRole(user.role)}</div>
                 <p className="text-gray-600 mb-4">{user.email}</p>
                 
                 {/* Status */}
@@ -181,7 +184,7 @@ export function UserProfile() {
                   <UserIcon className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Role</p>
-                    <p className="font-medium capitalize">{user.role}</p>
+                    <p className="font-medium">{humanizeRole(user.role)}</p>
                   </div>
                 </div>
 

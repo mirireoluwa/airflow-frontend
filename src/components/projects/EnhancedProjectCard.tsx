@@ -153,6 +153,7 @@ export function EnhancedProjectCard({
           <ProgressBar 
             value={progressPercentage} 
             className="h-2"
+            variant="apple"
           />
         </div>
 

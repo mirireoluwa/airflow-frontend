@@ -14,7 +14,7 @@ export function Signup() {
   const [form, setForm] = useState({
     name: '',
     email: '',
-    role: 'employee' as 'employee' | 'admin' | 'manager',
+    role: 'employee' as 'employee' | 'admin' | 'project_manager' | 'functional_manager',
     department: '',
     auid: '',
     password: '',
@@ -75,7 +75,8 @@ export function Signup() {
   const roleOptions = [
     { value: 'employee', label: 'Employee' },
     { value: 'admin', label: 'Admin' },
-    { value: 'manager', label: 'Manager' }
+    { value: 'project_manager', label: 'Project Manager' },
+    { value: 'functional_manager', label: 'Functional Manager' }
   ];
 
   return (

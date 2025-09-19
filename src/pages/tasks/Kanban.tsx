@@ -10,6 +10,7 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { KanbanColumn } from '../../components/kanban/KanbanColumn';
 import { KanbanCard } from '../../components/kanban/KanbanCard';
 import { useAirflow } from '../../context/AirflowContext';
+import { getAccessibleTasks } from '../../utils/roleUtils';
 import type { Task, TaskStatus, KanbanColumn as KanbanColumnType } from '../../types';
 
 export function Kanban() {
@@ -24,8 +25,9 @@ export function Kanban() {
     })
   );
 
-  // Create columns with tasks
+  // Create columns with accessible tasks
   const columns: KanbanColumnType[] = useMemo(() => {
+    const accessibleTasks = getAccessibleTasks(state.currentUser, state.tasks);
     const columnDefinitions = [
       { id: 'todo' as TaskStatus, title: 'To Do' },
       { id: 'in-progress' as TaskStatus, title: 'In Progress' },
@@ -35,9 +37,9 @@ export function Kanban() {
 
     return columnDefinitions.map(col => ({
       ...col,
-      tasks: state.tasks.filter(task => task.status === col.id)
+      tasks: accessibleTasks.filter(task => task.status === col.id)
     }));
-  }, [state.tasks]);
+  }, [state.tasks, state.currentUser]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const task = state.tasks.find(t => t.id === event.active.id);

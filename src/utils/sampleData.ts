@@ -15,7 +15,7 @@ export const sampleUsers: User[] = [
     id: '2',
     name: 'Jane Smith',
     email: 'jane.smith@example.com',
-    role: 'manager',
+    role: 'project_manager',
     department: 'Product',
     auid: '87654321',
     status: 'busy',
@@ -55,6 +55,44 @@ export const sampleProjects: Project[] = [
     endDate: new Date('2024-04-15'),
     progress: 65,
     tasks: [],
+    comments: [
+      {
+        id: 'comment-1',
+        content: 'Great progress on the design phase! The wireframes look fantastic.',
+        author: sampleUsers[1],
+        createdAt: new Date('2024-02-15'),
+        updatedAt: new Date('2024-02-15')
+      },
+      {
+        id: 'comment-2',
+        content: 'We need to finalize the color scheme before moving to development.',
+        author: sampleUsers[0],
+        createdAt: new Date('2024-02-18'),
+        updatedAt: new Date('2024-02-18')
+      }
+    ],
+    documents: [
+      {
+        id: 'doc-1',
+        name: 'Design Guidelines.pdf',
+        url: '/documents/design-guidelines.pdf',
+        size: 2048576,
+        type: 'application/pdf',
+        uploadedBy: sampleUsers[1],
+        uploadedAt: new Date('2024-02-10'),
+        description: 'Brand guidelines and design system documentation'
+      },
+      {
+        id: 'doc-2',
+        name: 'Wireframes.fig',
+        url: '/documents/wireframes.fig',
+        size: 5242880,
+        type: 'application/figma',
+        uploadedBy: sampleUsers[2],
+        uploadedAt: new Date('2024-02-12'),
+        description: 'Figma wireframes for all pages'
+      }
+    ],
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-02-20'),
     color: '#3B82F6'
@@ -70,6 +108,27 @@ export const sampleProjects: Project[] = [
     endDate: new Date('2024-06-01'),
     progress: 30,
     tasks: [],
+    comments: [
+      {
+        id: 'comment-3',
+        content: 'React Native setup is complete. Ready to start development!',
+        author: sampleUsers[2],
+        createdAt: new Date('2024-02-05'),
+        updatedAt: new Date('2024-02-05')
+      }
+    ],
+    documents: [
+      {
+        id: 'doc-3',
+        name: 'API Documentation.md',
+        url: '/documents/api-docs.md',
+        size: 1024000,
+        type: 'text/markdown',
+        uploadedBy: sampleUsers[1],
+        uploadedAt: new Date('2024-02-03'),
+        description: 'API endpoints and integration guide'
+      }
+    ],
     createdAt: new Date('2024-02-01'),
     updatedAt: new Date('2024-02-20'),
     color: '#10B981'
@@ -85,6 +144,8 @@ export const sampleProjects: Project[] = [
     endDate: new Date('2024-05-01'),
     progress: 15,
     tasks: [],
+    comments: [],
+    documents: [],
     createdAt: new Date('2024-02-15'),
     updatedAt: new Date('2024-02-20'),
     color: '#F59E0B'

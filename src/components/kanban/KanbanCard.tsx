@@ -1,7 +1,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MessageCircle, FileText, MoreVertical } from 'lucide-react';
+import { MessageCircle, FileText } from 'lucide-react';
 import { getOverdueTaskColor } from '../../utils/overdueTasks';
 import type { Task } from '../../types';
 import { useAirflow } from '../../context/AirflowContext';
@@ -79,16 +79,13 @@ export function KanbanCard({ task }: KanbanCardProps) {
       }`}
     >
       <div className="space-y-3">
-        {/* Header with Priority and Options */}
+        {/* Header with Priority */}
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-2">
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityBadge(task.priority)}`}>
               {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
             </span>
           </div>
-          <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-            <MoreVertical className="h-4 w-4 text-gray-500" />
-          </button>
         </div>
 
         {/* Title */}

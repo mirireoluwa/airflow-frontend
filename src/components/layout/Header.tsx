@@ -24,6 +24,8 @@ export function Header({ onMenuClick }: HeaderProps) {
     }
   };
 
+  const humanizeRole = (role?: string) => (role ? role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '');
+
   return (
     <header className="sticky top-0 z-40 px-4 lg:px-6 pt-2">
       <div className="glass-effect border border-white/20 rounded-2xl shadow-md px-6 lg:px-8 py-4 mx-auto max-w-7xl">
@@ -91,8 +93,8 @@ export function Header({ onMenuClick }: HeaderProps) {
                 {state.currentUser?.name || 'Guest'}
               </p>
               <div className="flex items-center space-x-2">
-                <p className="text-xs text-gray-500 capitalize">
-                  {state.currentUser?.role || ''}
+                <p className="text-xs text-gray-500">
+                  {humanizeRole(state.currentUser?.role)}
                 </p>
                 {state.currentUser?.status === 'custom' && state.currentUser?.customStatus && (
                   <span className="text-xs text-blue-600">

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { getOverdueTasksForUser, getOverdueTasksForManager } from '../utils/overdueTasks';
-import type { AppState, Project, Task, User, Activity, Notification, ChecklistItem } from '../types';
+import type { AppState, Project, Task, User, Activity, Notification, ChecklistItem, Comment, ProjectDocument } from '../types';
 
 interface AirflowContextType {
   state: AppState;
@@ -14,10 +14,12 @@ interface AirflowContextType {
   deleteTask: (id: string) => void;
   addActivity: (activity: Omit<Activity, 'id' | 'createdAt'>) => void;
   // Auth helpers
-  signup: (payload: { name: string; email: string; role: 'employee' | 'admin' | 'manager'; department?: string; auid: string; password: string }) => void;
+  signup: (payload: { name: string; email: string; role: 'employee' | 'admin' | 'project_manager' | 'functional_manager'; department?: string; auid: string; password: string }) => void;
   login: (payload: { email: string; password: string }) => void;
   logout: () => void;
   clearUsers: () => void;
+  deleteCurrentUser: () => void;
+  pruneUsersToDefaults: () => Promise<void>;
   // User profile helpers
   updateUserProfile: (updates: Partial<User>) => void;
   updateUserPassword: (currentPassword: string, newPassword: string) => void;
@@ -37,6 +39,12 @@ interface AirflowContextType {
   removeChecklistDependency: (taskId: string, fromItemId: string, toItemId: string) => void;
   validateChecklistDependencies: (taskId: string) => { isValid: boolean; errors: string[] };
   getBlockedChecklistItems: (taskId: string) => ChecklistItem[];
+  // Project comments and documents
+  addProjectComment: (projectId: string, content: string) => void;
+  updateProjectComment: (projectId: string, commentId: string, content: string) => void;
+  deleteProjectComment: (projectId: string, commentId: string) => void;
+  addProjectDocument: (projectId: string, document: Omit<ProjectDocument, 'id' | 'uploadedAt'>) => void;
+  deleteProjectDocument: (projectId: string, documentId: string) => void;
 }
 
 type AirflowAction =
@@ -62,7 +70,12 @@ type AirflowAction =
   | { type: 'DELETE_CHECKLIST_ITEM'; payload: { taskId: string; itemId: string } }
   | { type: 'TOGGLE_CHECKLIST_ITEM'; payload: { taskId: string; itemId: string } }
   | { type: 'ADD_CHECKLIST_DEPENDENCY'; payload: { taskId: string; fromItemId: string; toItemId: string } }
-  | { type: 'REMOVE_CHECKLIST_DEPENDENCY'; payload: { taskId: string; fromItemId: string; toItemId: string } };
+  | { type: 'REMOVE_CHECKLIST_DEPENDENCY'; payload: { taskId: string; fromItemId: string; toItemId: string } }
+  | { type: 'ADD_PROJECT_COMMENT'; payload: { projectId: string; comment: Comment } }
+  | { type: 'UPDATE_PROJECT_COMMENT'; payload: { projectId: string; commentId: string; content: string } }
+  | { type: 'DELETE_PROJECT_COMMENT'; payload: { projectId: string; commentId: string } }
+  | { type: 'ADD_PROJECT_DOCUMENT'; payload: { projectId: string; document: ProjectDocument } }
+  | { type: 'DELETE_PROJECT_DOCUMENT'; payload: { projectId: string; documentId: string } };
 
 const initialState: AppState = {
   projects: [],
@@ -259,6 +272,75 @@ function airflowReducer(state: AppState, action: AirflowAction): AppState {
             : task
         )
       };
+    case 'ADD_PROJECT_COMMENT':
+      return {
+        ...state,
+        projects: state.projects.map(project =>
+          project.id === action.payload.projectId
+            ? {
+                ...project,
+                comments: [...project.comments, action.payload.comment],
+                updatedAt: new Date()
+              }
+            : project
+        )
+      };
+    case 'UPDATE_PROJECT_COMMENT':
+      return {
+        ...state,
+        projects: state.projects.map(project =>
+          project.id === action.payload.projectId
+            ? {
+                ...project,
+                comments: project.comments.map(comment =>
+                  comment.id === action.payload.commentId
+                    ? { ...comment, content: action.payload.content, updatedAt: new Date() }
+                    : comment
+                ),
+                updatedAt: new Date()
+              }
+            : project
+        )
+      };
+    case 'DELETE_PROJECT_COMMENT':
+      return {
+        ...state,
+        projects: state.projects.map(project =>
+          project.id === action.payload.projectId
+            ? {
+                ...project,
+                comments: project.comments.filter(comment => comment.id !== action.payload.commentId),
+                updatedAt: new Date()
+              }
+            : project
+        )
+      };
+    case 'ADD_PROJECT_DOCUMENT':
+      return {
+        ...state,
+        projects: state.projects.map(project =>
+          project.id === action.payload.projectId
+            ? {
+                ...project,
+                documents: [...project.documents, action.payload.document],
+                updatedAt: new Date()
+              }
+            : project
+        )
+      };
+    case 'DELETE_PROJECT_DOCUMENT':
+      return {
+        ...state,
+        projects: state.projects.map(project =>
+          project.id === action.payload.projectId
+            ? {
+                ...project,
+                documents: project.documents.filter(doc => doc.id !== action.payload.documentId),
+                updatedAt: new Date()
+              }
+            : project
+        )
+      };
     default:
       return state;
   }
@@ -295,7 +377,7 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     });
     
     // Add notification for project creation to team members (essential)
-    if (state.currentUser?.role === 'admin' || state.currentUser?.role === 'manager') {
+    if (state.currentUser?.role === 'admin' || state.currentUser?.role === 'project_manager') {
       const teamMembers = getScopedUsers();
       teamMembers.forEach(member => {
         if (member.id !== state.currentUser?.id) {
@@ -344,13 +426,14 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
       enforcedAssignee = state.currentUser;
     }
     
-    // Prevent managers from assigning tasks to admins
-    if (state.currentUser?.role === 'manager' && enforcedAssignee?.role === 'admin') {
+    // Prevent non-admin managers from assigning tasks to admins
+    if ((state.currentUser?.role === 'project_manager' || state.currentUser?.role === 'functional_manager') && enforcedAssignee?.role === 'admin') {
       console.warn('Managers cannot assign tasks to admins');
       enforcedAssignee = undefined;
     }
     
-    if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.role === 'manager') && enforcedAssignee) {
+    // Department scoping for project managers only (functional managers can cross departments)
+    if (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.role === 'project_manager') && enforcedAssignee) {
       if (state.currentUser.department && enforcedAssignee.department && state.currentUser.department !== enforcedAssignee.department) {
         // If cross-department assignment, block by scoping to same department
         enforcedAssignee = undefined;
@@ -385,6 +468,22 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
         read: false,
         userId: task.assignee.id,
         actionUrl: `/tasks`
+      });
+    }
+    
+    // Add notifications for multiple assignees
+    if (task.assignees && Array.isArray(task.assignees)) {
+      task.assignees.forEach((assignee: any) => {
+        if (assignee.id !== state.currentUser?.id) {
+          addNotification({
+            title: 'New Task Assigned',
+            message: `You have been assigned to "${task.title}"`,
+            type: 'info',
+            read: false,
+            userId: assignee.id,
+            actionUrl: `/tasks`
+          });
+        }
       });
     }
   };
@@ -504,6 +603,11 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
             }
           ];
           dispatch({ type: 'SET_NOTIFICATIONS', payload: sampleNotifications });
+          localStorage.setItem('airflow_notifications', JSON.stringify(sampleNotifications));
+        } else {
+          // Load notifications from localStorage
+          const storedNotifications = JSON.parse(localStorage.getItem('airflow_notifications') || '[]');
+          dispatch({ type: 'SET_NOTIFICATIONS', payload: storedNotifications });
         }
         
         const stored = localStorage.getItem('airflow_current_user');
@@ -561,11 +665,31 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login: AirflowContextType['login'] = ({ email, password }) => {
-    const user = state.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    console.log('Login attempt:', { email, password });
+    console.log('Current users in state:', state.users);
+    
+    // Try to find user in current state first
+    let user = state.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    
+    // If not found in state, try to load from localStorage
+    if (!user) {
+      console.log('User not found in state, checking localStorage...');
+      const storedUsersRaw = localStorage.getItem('airflow_users');
+      if (storedUsersRaw) {
+        const users = JSON.parse(storedUsersRaw);
+        user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+        console.log('Found user in localStorage:', user);
+      }
+    }
+    
+    console.log('Final user found:', user);
     const pwdRaw = localStorage.getItem('airflow_passwords');
     const passwords: Record<string, string> = pwdRaw ? JSON.parse(pwdRaw) : {};
+    console.log('Stored passwords:', passwords);
     const stored = passwords[email.toLowerCase()];
+    console.log('Stored password for email:', stored);
     if (!user || !stored || stored !== password) {
+      console.log('Login failed - invalid credentials');
       throw new Error('Invalid credentials');
     }
     dispatch({ type: 'SET_CURRENT_USER', payload: user });
@@ -628,6 +752,99 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('airflow_current_user');
   };
 
+  const deleteCurrentUser: AirflowContextType['deleteCurrentUser'] = () => {
+    const user = state.currentUser;
+    if (!user) return;
+
+    // Remove user from state
+    const remainingUsers = state.users.filter(u => u.id !== user.id);
+    dispatch({ type: 'SET_USERS', payload: remainingUsers });
+
+    // Persist users
+    localStorage.setItem('airflow_users', JSON.stringify(remainingUsers));
+
+    // Remove stored password for this user
+    const pwdRaw = localStorage.getItem('airflow_passwords');
+    const passwords: Record<string, string> = pwdRaw ? JSON.parse(pwdRaw) : {};
+    if (passwords[user.email.toLowerCase()]) {
+      delete passwords[user.email.toLowerCase()];
+      localStorage.setItem('airflow_passwords', JSON.stringify(passwords));
+    }
+
+    // Remove this user's notifications
+    const storedNotifications = JSON.parse(localStorage.getItem('airflow_notifications') || '[]');
+    const filteredNotifications = storedNotifications.filter((n: Notification) => n.userId !== user.id);
+    localStorage.setItem('airflow_notifications', JSON.stringify(filteredNotifications));
+    dispatch({ type: 'SET_NOTIFICATIONS', payload: filteredNotifications });
+
+    // Log out and clear current user
+    dispatch({ type: 'SET_CURRENT_USER', payload: null });
+    localStorage.removeItem('airflow_current_user');
+  };
+
+  const pruneUsersToDefaults: AirflowContextType['pruneUsersToDefaults'] = async () => {
+    try {
+      const { sampleUsers } = await import('../utils/sampleData');
+      const allowedEmails = new Set(sampleUsers.map(u => u.email.toLowerCase()));
+
+      // Users
+      const prunedUsers = state.users.filter(u => allowedEmails.has(u.email.toLowerCase()));
+      dispatch({ type: 'SET_USERS', payload: prunedUsers });
+      localStorage.setItem('airflow_users', JSON.stringify(prunedUsers));
+
+      // Passwords
+      const pwdRaw = localStorage.getItem('airflow_passwords');
+      const passwords: Record<string, string> = pwdRaw ? JSON.parse(pwdRaw) : {};
+      const prunedPasswords: Record<string, string> = {};
+      Object.keys(passwords).forEach(email => {
+        if (allowedEmails.has(email.toLowerCase())) {
+          prunedPasswords[email] = passwords[email];
+        }
+      });
+      localStorage.setItem('airflow_passwords', JSON.stringify(prunedPasswords));
+
+      // Notifications
+      const storedNotifications = JSON.parse(localStorage.getItem('airflow_notifications') || '[]');
+      const allowedIds = new Set(prunedUsers.map(u => u.id));
+      const filteredNotifications = storedNotifications.filter((n: Notification) => allowedIds.has(n.userId));
+      localStorage.setItem('airflow_notifications', JSON.stringify(filteredNotifications));
+      dispatch({ type: 'SET_NOTIFICATIONS', payload: filteredNotifications });
+
+      // Projects: drop members not allowed; if owner not allowed, set to first sample user
+      const fallbackOwner = sampleUsers[0];
+      const updatedProjects: Project[] = state.projects.map(p => {
+        const newMembers = p.members.filter(m => allowedIds.has(m.id));
+        const newOwner = allowedIds.has(p.owner.id) ? p.owner : fallbackOwner;
+        return { ...p, owner: newOwner, members: newMembers, updatedAt: new Date() };
+      });
+      dispatch({ type: 'SET_PROJECTS', payload: updatedProjects });
+
+      // Tasks: nullify assignee if not allowed; if reporter not allowed, set to project owner
+      const projectIdToOwner: Record<string, User> = {};
+      updatedProjects.forEach(p => { projectIdToOwner[p.id] = p.owner; });
+      const updatedTasks: Task[] = state.tasks.map(t => {
+        const newAssignee = t.assignee && allowedIds.has(t.assignee.id) ? t.assignee : undefined;
+        const newReporter = allowedIds.has(t.reporter.id) ? t.reporter : (projectIdToOwner[t.projectId] || fallbackOwner);
+        return { ...t, assignee: newAssignee, reporter: newReporter, updatedAt: new Date() };
+      });
+      dispatch({ type: 'SET_TASKS', payload: updatedTasks });
+
+      // Current user fallback if needed
+      if (!state.currentUser || !allowedIds.has(state.currentUser.id)) {
+        const fallback = sampleUsers[2]; // Bob Johnson (employee)
+        dispatch({ type: 'SET_CURRENT_USER', payload: fallback });
+        localStorage.setItem('airflow_current_user', JSON.stringify(fallback));
+      }
+    } catch (e) {
+      console.error('Failed to prune users to defaults', e);
+    }
+  };
+
+  // Expose maintenance helper for debugging via console
+  useEffect(() => {
+    (window as any).pruneUsersToDefaults = pruneUsersToDefaults;
+  }, [pruneUsersToDefaults]);
+
   // User profile helpers
   const updateUserProfile: AirflowContextType['updateUserProfile'] = (updates) => {
     if (!state.currentUser) return;
@@ -665,18 +882,31 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date()
     };
     dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+    
+    // Persist to localStorage
+    const storedNotifications = JSON.parse(localStorage.getItem('airflow_notifications') || '[]');
+    const updatedNotifications = [notification, ...storedNotifications];
+    localStorage.setItem('airflow_notifications', JSON.stringify(updatedNotifications));
   };
 
   const markNotificationAsRead: AirflowContextType['markNotificationAsRead'] = (id) => {
     dispatch({ type: 'MARK_NOTIFICATION_READ', payload: id });
     
-    // Removed notification read notification - not essential
+    // Persist to localStorage
+    const storedNotifications = JSON.parse(localStorage.getItem('airflow_notifications') || '[]');
+    const updatedNotifications = storedNotifications.map((n: Notification) => 
+      n.id === id ? { ...n, read: true } : n
+    );
+    localStorage.setItem('airflow_notifications', JSON.stringify(updatedNotifications));
   };
 
   const clearNotifications: AirflowContextType['clearNotifications'] = () => {
-    // Removed notification clear notification - not essential
-    
     dispatch({ type: 'CLEAR_NOTIFICATIONS' });
+    
+    // Persist to localStorage
+    const storedNotifications = JSON.parse(localStorage.getItem('airflow_notifications') || '[]');
+    const updatedNotifications = storedNotifications.filter((n: Notification) => n.userId !== state.currentUser?.id);
+    localStorage.setItem('airflow_notifications', JSON.stringify(updatedNotifications));
   };
 
   // Overdue task checking
@@ -703,7 +933,7 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
           actionUrl: `/tasks`
         });
       });
-    } else if (user.role === 'manager' || user.role === 'admin') {
+    } else if (user.role === 'project_manager' || user.role === 'functional_manager' || user.role === 'admin') {
       // Check for team's overdue tasks
       const overdueTasks = getOverdueTasksForManager(user.id, state.tasks, state.users);
       
@@ -725,7 +955,8 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     const current = state.currentUser;
     if (!current) return [];
     if (current.role === 'employee') return [current];
-    // admin/manager: users within same department if defined, else all
+    // functional_manager: org-wide; project_manager/admin: department if defined else all
+    if (current.role === 'functional_manager') return state.users;
     return current.department ? state.users.filter(u => u.department === current.department) : state.users;
   };
 
@@ -735,7 +966,10 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     if (current.role === 'employee') {
       return state.tasks.filter(t => t.assignee?.id === current.id);
     }
-    // admin/manager: tasks within same department by assignee or reporter
+    // functional_manager: all tasks; project_manager/admin: tasks within same department by assignee or reporter
+    if (current.role === 'functional_manager') {
+      return state.tasks;
+    }
     if (current.department) {
       return state.tasks.filter(t => (t.assignee && t.assignee.department === current.department) || t.reporter.department === current.department);
     }
@@ -766,7 +1000,43 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateChecklistItem: AirflowContextType['updateChecklistItem'] = (taskId, itemId, updates) => {
+    // Get the task and current checklist item to check for assignee changes
+    const task = state.tasks.find(t => t.id === taskId);
+    const currentItem = task?.checklist?.find(item => item.id === itemId);
+    
     dispatch({ type: 'UPDATE_CHECKLIST_ITEM', payload: { taskId, itemId, updates } });
+    
+    // Check if assignees were added and send notifications
+    if (updates.assignees && Array.isArray(updates.assignees)) {
+      const newAssignees = updates.assignees.filter((newAssignee: any) => 
+        !currentItem?.assignees?.some((existingAssignee: any) => existingAssignee.id === newAssignee.id)
+      );
+      
+      newAssignees.forEach((assignee: any) => {
+        if (assignee.id !== state.currentUser?.id) {
+          addNotification({
+            title: '📋 Checklist Item Assigned',
+            message: `You have been assigned to "${updates.title || currentItem?.title || 'a checklist item'}" in "${task?.title || 'a task'}"`,
+            type: 'info',
+            read: false,
+            userId: assignee.id,
+            actionUrl: `/tasks/${taskId}`
+          });
+        }
+      });
+    }
+    
+    // Check if single assignee was added and send notification
+    if (updates.assignee && updates.assignee.id !== state.currentUser?.id) {
+      addNotification({
+        title: '📋 Checklist Item Assigned',
+        message: `You have been assigned to "${updates.title || currentItem?.title || 'a checklist item'}" in "${task?.title || 'a task'}"`,
+        type: 'info',
+        read: false,
+        userId: updates.assignee.id,
+        actionUrl: `/tasks/${taskId}`
+      });
+    }
     
     addActivity({
       type: 'checklist_item_updated',
@@ -900,6 +1170,117 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // Project comments and documents
+  const addProjectComment: AirflowContextType['addProjectComment'] = (projectId, content) => {
+    const comment: Comment = {
+      id: generateId(),
+      content,
+      author: state.currentUser ?? defaultUser,
+      createdAt: new Date()
+    };
+    
+    dispatch({ type: 'ADD_PROJECT_COMMENT', payload: { projectId, comment } });
+    
+    addActivity({
+      type: 'comment_added',
+      title: 'Project Comment Added',
+      description: `Added a comment to project`,
+      user: state.currentUser ?? defaultUser,
+      projectId
+    });
+
+    // Send notifications to all project members (except the comment author)
+    const project = state.projects.find(p => p.id === projectId);
+    if (project) {
+      project.members.forEach(member => {
+        if (member.id !== state.currentUser?.id) {
+          addNotification({
+            title: '💬 New Project Comment',
+            message: `${state.currentUser?.name} added a comment to "${project.name}"`,
+            type: 'info',
+            read: false,
+            userId: member.id,
+            actionUrl: `/projects/${projectId}`
+          });
+        }
+      });
+    }
+  };
+
+  const updateProjectComment: AirflowContextType['updateProjectComment'] = (projectId, commentId, content) => {
+    dispatch({ type: 'UPDATE_PROJECT_COMMENT', payload: { projectId, commentId, content } });
+    
+    addActivity({
+      type: 'comment_added',
+      title: 'Project Comment Updated',
+      description: `Updated a comment in project`,
+      user: state.currentUser ?? defaultUser,
+      projectId
+    });
+  };
+
+  const deleteProjectComment: AirflowContextType['deleteProjectComment'] = (projectId, commentId) => {
+    dispatch({ type: 'DELETE_PROJECT_COMMENT', payload: { projectId, commentId } });
+    
+    addActivity({
+      type: 'comment_added',
+      title: 'Project Comment Deleted',
+      description: `Deleted a comment from project`,
+      user: state.currentUser ?? defaultUser,
+      projectId
+    });
+  };
+
+  const addProjectDocument: AirflowContextType['addProjectDocument'] = (projectId, documentData) => {
+    const document: ProjectDocument = {
+      ...documentData,
+      id: generateId(),
+      uploadedAt: new Date()
+    };
+    
+    dispatch({ type: 'ADD_PROJECT_DOCUMENT', payload: { projectId, document } });
+    
+    addActivity({
+      type: 'project_updated',
+      title: 'Document Uploaded',
+      description: `Uploaded "${document.name}" to project`,
+      user: state.currentUser ?? defaultUser,
+      projectId
+    });
+
+    // Send notifications to all project members (except the uploader)
+    const project = state.projects.find(p => p.id === projectId);
+    if (project) {
+      project.members.forEach(member => {
+        if (member.id !== state.currentUser?.id) {
+          addNotification({
+            title: '📄 New Project Document',
+            message: `${state.currentUser?.name} uploaded "${document.name}" to "${project.name}"`,
+            type: 'info',
+            read: false,
+            userId: member.id,
+            actionUrl: `/projects/${projectId}`
+          });
+        }
+      });
+    }
+  };
+
+  const deleteProjectDocument: AirflowContextType['deleteProjectDocument'] = (projectId, documentId) => {
+    const project = state.projects.find(p => p.id === projectId);
+    const document = project?.documents.find(d => d.id === documentId);
+    
+    dispatch({ type: 'DELETE_PROJECT_DOCUMENT', payload: { projectId, documentId } });
+    
+    addActivity({
+      type: 'project_updated',
+      title: 'Document Deleted',
+      description: `Deleted "${document?.name || 'document'}" from project`,
+      user: state.currentUser ?? defaultUser,
+      projectId
+    });
+  };
+
   return (
     <AirflowContext.Provider
       value={{
@@ -916,6 +1297,8 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         clearUsers,
+        deleteCurrentUser,
+        pruneUsersToDefaults,
         updateUserProfile,
         updateUserPassword,
         addNotification,
@@ -930,7 +1313,12 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
         addChecklistDependency,
         removeChecklistDependency,
         validateChecklistDependencies,
-        getBlockedChecklistItems
+        getBlockedChecklistItems,
+        addProjectComment,
+        updateProjectComment,
+        deleteProjectComment,
+        addProjectDocument,
+        deleteProjectDocument
       }}
     >
       {children}

@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAirflow } from '../../context/AirflowContext';
-import { canAccessAnalytics, canAccessKanban } from '../../utils/roleUtils';
+import { canAccessAnalytics, canAccessKanban, canAccessProjects } from '../../utils/roleUtils';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: 'analytics' | 'kanban' | 'admin';
+  requiredRole?: 'analytics' | 'kanban' | 'admin' | 'projects';
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -25,6 +25,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   if (requiredRole === 'admin' && state.currentUser.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requiredRole === 'projects' && !canAccessProjects(state.currentUser)) {
     return <Navigate to="/" replace />;
   }
 

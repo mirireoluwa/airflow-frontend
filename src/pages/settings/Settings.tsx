@@ -16,10 +16,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import type { UserStatus } from '../../types';
+import { useNavigate } from 'react-router-dom';
 
 export function Settings() {
-  const { state, updateUserProfile, updateUserPassword } = useAirflow();
+  const { state, updateUserProfile, updateUserPassword, deleteCurrentUser, pruneUsersToDefaults } = useAirflow();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   
   // Profile state
   const [profileData, setProfileData] = useState({
@@ -49,6 +51,9 @@ export function Settings() {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isPruning, setIsPruning] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
 
   // Interest management
   const [newInterest, setNewInterest] = useState('');
@@ -158,6 +163,40 @@ export function Settings() {
       status,
       customStatus: status !== 'custom' ? '' : profileData.customStatus
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!state.currentUser) return;
+    if (confirmText !== state.currentUser.email) {
+      setMessage({ type: 'error', text: 'Type your email to confirm account deletion.' });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      deleteCurrentUser();
+      navigate('/signup');
+    } catch (e) {
+      setMessage({ type: 'error', text: 'Failed to delete account. Please try again.' });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handlePruneDefaults = async () => {
+    setIsPruning(true);
+    try {
+      await pruneUsersToDefaults();
+      setMessage({ type: 'success', text: 'Users pruned to defaults successfully.' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (e) {
+      setMessage({ type: 'error', text: 'Failed to prune users. Please try again.' });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setIsPruning(false);
+    }
   };
 
   return (
@@ -482,11 +521,65 @@ export function Settings() {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Role</label>
-              <p className="text-gray-900 capitalize">{state.currentUser?.role}</p>
+              <p className="text-gray-900">{state.currentUser ? state.currentUser.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Member Since</label>
               <p className="text-gray-900">Today</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card variant="flat">
+        <CardHeader>
+          <CardTitle>Danger Zone</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="space-y-4 p-4 border border-red-200 rounded-xl bg-red-50">
+              <h4 className="font-semibold text-red-700">Delete Account</h4>
+              <p className="text-sm text-red-700">
+                This action is irreversible. All your data (profile, credentials, notifications) will be removed from this demo app. Type your email to confirm.
+              </p>
+              <Input
+                placeholder="Type your email to confirm"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+              />
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setConfirmText('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="primary" 
+                  onClick={handleDeleteAccount}
+                  loading={isDeleting}
+                  loadingText="Deleting..."
+                >
+                  Delete Account
+                </Button>
+              </div>
+            </div>
+
+            {/* Temporary: Reset users to defaults */}
+            <div className="space-y-3 p-4 border border-yellow-200 rounded-xl bg-yellow-50">
+              <h4 className="font-semibold text-yellow-800">Temporary: Reset Users to Defaults</h4>
+              <p className="text-sm text-yellow-800">Removes all non-default users, updates projects/tasks accordingly. For local cleanup during testing.</p>
+              <Button 
+                variant="outline" 
+                onClick={handlePruneDefaults}
+                loading={isPruning}
+                loadingText="Resetting..."
+              >
+                Reset to Default Users
+              </Button>
             </div>
           </div>
         </CardContent>

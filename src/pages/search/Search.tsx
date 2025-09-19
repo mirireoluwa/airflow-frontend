@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, FolderOpen, CheckSquare, User as UserIcon } from 'lucide-react';
 import { useAirflow } from '../../context/AirflowContext';
+import { getAccessibleTasks, canAccessProjects } from '../../utils/roleUtils';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -17,38 +18,37 @@ export function Search() {
     setQuery(searchParams.get('q') || '');
   }, [searchParams]);
 
+  const humanizeRole = (role: string) => role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
   const searchResults = useMemo(() => {
     if (!query.trim()) return { projects: [], tasks: [], users: [] };
 
     const searchTerm = query.toLowerCase();
-    const scopedTasks = getScopedTasks();
+    const accessibleTasks = getAccessibleTasks(state.currentUser, state.tasks);
 
-    const projects = state.projects.filter(project =>
-      project.name.toLowerCase().includes(searchTerm) ||
-      project.description.toLowerCase().includes(searchTerm)
-    );
+    const projects = canAccessProjects(state.currentUser) 
+      ? state.projects.filter(project =>
+          project.name.toLowerCase().includes(searchTerm) ||
+          project.description.toLowerCase().includes(searchTerm)
+        )
+      : [];
 
-    const tasks = scopedTasks.filter(task =>
+    const tasks = accessibleTasks.filter(task =>
       task.title.toLowerCase().includes(searchTerm) ||
       task.description.toLowerCase().includes(searchTerm) ||
-      task.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+      (task.tags && task.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
     );
 
-    const users = state.users.filter(user =>
-      user.name.toLowerCase().includes(searchTerm) ||
-      user.email.toLowerCase().includes(searchTerm) ||
-      (user.department && user.department.toLowerCase().includes(searchTerm))
-    );
+    const users = state.users
+      .filter(user => user.id !== state.currentUser?.id)
+      .filter(user =>
+        user.name.toLowerCase().includes(searchTerm) ||
+        user.email.toLowerCase().includes(searchTerm) ||
+        (user.department && user.department.toLowerCase().includes(searchTerm))
+      );
 
     return { projects, tasks, users };
-  }, [query, state.projects, state.users, getScopedTasks]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      setSearchParams({ q: query.trim() });
-    }
-  };
+  }, [query, state.projects, state.tasks, state.users, state.currentUser]);
 
   const handleProjectClick = (projectId: string) => {
     navigate(`/projects/${projectId}`);
@@ -75,25 +75,7 @@ export function Search() {
         </p>
       </div>
 
-      {/* Search Form */}
-      <Card variant="flat">
-        <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex gap-4">
-            <Input
-              type="text"
-              placeholder="Search projects, tasks, users..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit" variant="primary">
-              <SearchIcon className="h-5 w-5 mr-2" />
-              Search
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
+      {/* Results */}
       {query && (
         <>
           {/* Results Summary */}
@@ -214,8 +196,8 @@ export function Search() {
                               <h3 className="font-semibold text-gray-900">{user.name}</h3>
                               <p className="text-sm text-gray-600">{user.email}</p>
                               <div className="flex items-center space-x-2 mt-1">
-                                <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full capitalize">
-                                  {user.role}
+                                <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
+                                  {humanizeRole(user.role)}
                                 </span>
                                 {user.department && (
                                   <span className="text-xs text-gray-500">

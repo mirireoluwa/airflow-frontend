@@ -7,6 +7,7 @@ interface StatsCardProps {
   changeType?: 'positive' | 'negative' | 'neutral';
   icon: LucideIcon;
   iconColor?: string;
+  onClick?: () => void;
 }
 
 export function StatsCard({ 
@@ -15,7 +16,8 @@ export function StatsCard({
   change, 
   changeType = 'neutral', 
   icon: Icon,
-  iconColor = 'text-red-600'
+  iconColor = 'text-red-600',
+  onClick
 }: StatsCardProps) {
   const changeColors = {
     positive: 'text-green-600',
@@ -24,7 +26,10 @@ export function StatsCard({
   };
 
   return (
-    <div className="apple-card p-6 group cursor-pointer">
+    <div 
+      className="apple-card p-6 group cursor-pointer"
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-500 mb-2">{title}</p>

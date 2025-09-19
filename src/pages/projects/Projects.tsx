@@ -22,7 +22,7 @@ export function Projects() {
           <h1 className="text-4xl font-bold text-gradient mb-2">Projects</h1>
           <p className="text-lg text-gray-600">Manage your projects and track their progress.</p>
         </div>
-        <Button onClick={handleCreateProject}>
+        <Button onClick={handleCreateProject} variant="apple-primary">
           <Plus className="h-4 w-4 mr-2" />
           Add Project
         </Button>
@@ -35,7 +35,7 @@ export function Projects() {
             <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
             <p className="text-gray-500 mb-4">Get started by creating your first project.</p>
-            <Button onClick={handleCreateProject}>
+            <Button onClick={handleCreateProject} variant="apple-primary">
               <Plus className="h-4 w-4 mr-2" />
               Create Project
             </Button>

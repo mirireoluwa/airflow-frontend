@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Clock, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -8,7 +8,7 @@ import { Select } from '../../components/ui/Select';
 import { StatusToggle } from '../../components/ui/StatusToggle';
 import { PriorityChip } from '../../components/ui/PriorityChip';
 import { useAirflow } from '../../context/AirflowContext';
-import { getAssignableUsers } from '../../utils/roleUtils';
+import { getAssignableUsers, canEditTask } from '../../utils/roleUtils';
 import { ChecklistView } from '../../components/checklist/ChecklistView';
 import { format } from 'date-fns';
 import type { TaskStatus, TaskPriority } from '../../types';
@@ -16,6 +16,7 @@ import type { TaskStatus, TaskPriority } from '../../types';
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { state, updateTask, deleteTask } = useAirflow();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -28,6 +29,14 @@ export function TaskDetailPage() {
   const [editEstimatedHours, setEditEstimatedHours] = useState('');
 
   const task = state.tasks.find(t => t.id === id);
+
+  // Check if we should open in edit mode
+  useEffect(() => {
+    const editParam = searchParams.get('edit');
+    if (editParam === 'true' && task && canEditTask(state.currentUser, task, state.users)) {
+      setIsEditing(true);
+    }
+  }, [searchParams, state.currentUser, task, state.users]);
 
   if (!task) {
     return (
@@ -154,10 +163,12 @@ export function TaskDetailPage() {
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleEdit}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
+              {canEditTask(state.currentUser, task, state.users) && (
+                <Button variant="outline" onClick={handleEdit}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+              )}
               <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:text-red-700">
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
