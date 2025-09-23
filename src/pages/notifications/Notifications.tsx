@@ -12,8 +12,7 @@ import {
   Filter,
   MoreVertical,
   Trash2,
-  CheckCheck,
-  X
+  CheckCheck
 } from 'lucide-react';
 import { useAirflow } from '../../context/AirflowContext';
 import { Button } from '../../components/ui/Button';
