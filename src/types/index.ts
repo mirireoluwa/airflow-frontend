@@ -76,6 +76,8 @@ export interface ProjectDocument {
   uploadedBy: User;
   uploadedAt: Date;
   description?: string;
+  accessRestricted?: boolean; // Whether access is restricted to specific team members
+  allowedUsers?: string[]; // Array of user IDs who can access this document
 }
 
 export interface ChecklistItem {

@@ -73,7 +73,7 @@ export function ChecklistItemComponent({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h4 className={`font-medium ${item.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+            <h4 className={`text-xs sm:text-sm font-medium ${item.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
               {item.title}
             </h4>
             {isBlocked && !item.completed && (
@@ -87,7 +87,7 @@ export function ChecklistItemComponent({
           </div>
           
           {item.description && (
-            <p className={`text-sm text-gray-600 mb-2 ${item.completed ? 'line-through' : ''}`}>
+            <p className={`text-xs sm:text-sm text-gray-600 mb-2 ${item.completed ? 'line-through' : ''}`}>
               {item.description}
             </p>
           )}

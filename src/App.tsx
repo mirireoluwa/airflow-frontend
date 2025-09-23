@@ -17,6 +17,7 @@ import { Search } from './pages/search/Search';
 import { Settings } from './pages/settings/Settings';
 import { UserProfile } from './pages/users/UserProfile';
 import { DocumentPage } from './pages/documents/DocumentPage';
+import { Notifications } from './pages/notifications/Notifications';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
@@ -169,6 +170,7 @@ function ProtectedRoutes() {
           } 
         />
         <Route path="/search" element={<Search />} />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/users/:userId" element={<UserProfile />} />
         <Route path="/projects/:projectId/documents/:documentId" element={<DocumentPage />} />
         <Route path="/settings" element={<Settings />} />

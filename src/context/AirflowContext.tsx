@@ -44,6 +44,7 @@ interface AirflowContextType {
   deleteProjectComment: (projectId: string, commentId: string) => void;
   addProjectDocument: (projectId: string, document: Omit<ProjectDocument, 'id' | 'uploadedAt'>) => void;
   deleteProjectDocument: (projectId: string, documentId: string) => void;
+  updateDocumentAccess: (projectId: string, documentId: string, accessRestricted: boolean, allowedUsers: string[]) => void;
 }
 
 type AirflowAction =
@@ -74,7 +75,8 @@ type AirflowAction =
   | { type: 'UPDATE_PROJECT_COMMENT'; payload: { projectId: string; commentId: string; content: string } }
   | { type: 'DELETE_PROJECT_COMMENT'; payload: { projectId: string; commentId: string } }
   | { type: 'ADD_PROJECT_DOCUMENT'; payload: { projectId: string; document: ProjectDocument } }
-  | { type: 'DELETE_PROJECT_DOCUMENT'; payload: { projectId: string; documentId: string } };
+  | { type: 'DELETE_PROJECT_DOCUMENT'; payload: { projectId: string; documentId: string } }
+  | { type: 'UPDATE_DOCUMENT_ACCESS'; payload: { projectId: string; documentId: string; accessRestricted: boolean; allowedUsers: string[] } };
 
 const initialState: AppState = {
   projects: [],
@@ -335,6 +337,27 @@ function airflowReducer(state: AppState, action: AirflowAction): AppState {
             ? {
                 ...project,
                 documents: project.documents.filter(doc => doc.id !== action.payload.documentId),
+                updatedAt: new Date()
+              }
+            : project
+        )
+      };
+    case 'UPDATE_DOCUMENT_ACCESS':
+      return {
+        ...state,
+        projects: state.projects.map(project =>
+          project.id === action.payload.projectId
+            ? {
+                ...project,
+                documents: project.documents.map(doc =>
+                  doc.id === action.payload.documentId
+                    ? {
+                        ...doc,
+                        accessRestricted: action.payload.accessRestricted,
+                        allowedUsers: action.payload.allowedUsers
+                      }
+                    : doc
+                ),
                 updatedAt: new Date()
               }
             : project
@@ -1219,6 +1242,21 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const updateDocumentAccess: AirflowContextType['updateDocumentAccess'] = (projectId, documentId, accessRestricted, allowedUsers) => {
+    const project = state.projects.find(p => p.id === projectId);
+    const document = project?.documents.find(d => d.id === documentId);
+    
+    dispatch({ type: 'UPDATE_DOCUMENT_ACCESS', payload: { projectId, documentId, accessRestricted, allowedUsers } });
+    
+    addActivity({
+      type: 'project_updated',
+      title: 'Document Access Updated',
+      description: `${accessRestricted ? 'Restricted' : 'Opened'} access to "${document?.name || 'document'}"`,
+      user: state.currentUser ?? defaultUser,
+      projectId
+    });
+  };
+
   return (
     <AirflowContext.Provider
       value={{
@@ -1255,7 +1293,8 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
         updateProjectComment,
         deleteProjectComment,
         addProjectDocument,
-        deleteProjectDocument
+        deleteProjectDocument,
+        updateDocumentAccess
       }}
     >
       {children}

@@ -27,10 +27,22 @@ export function NotificationDropdown() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'read'>('all');
   const [showActions, setShowActions] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const unreadCount = state.notifications.filter(n => !n.read).length;
+
+  // Detect mobile devices
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -57,7 +69,7 @@ export function NotificationDropdown() {
     return matchesSearch && matchesFilter;
   });
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationItemClick = (notification: any) => {
     setClickedNotification(notification.id);
     
     if (!notification.read) {
@@ -135,11 +147,19 @@ export function NotificationDropdown() {
     console.log('Delete notification:', notificationId);
   };
 
+  const handleNotificationClick = () => {
+    if (isMobile) {
+      navigate('/notifications');
+    } else {
+      setIsOpen(!isOpen);
+    }
+  };
+
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-50" ref={dropdownRef}>
               {/* Notification Bell */}
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleNotificationClick}
           className={cn(
             "relative p-3 rounded-2xl transition-all duration-300 hover:scale-105",
             unreadCount > 0 
@@ -157,7 +177,7 @@ export function NotificationDropdown() {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 backdrop-blur-xl border border-white/30 shadow-2xl z-50 max-h-[80vh] overflow-hidden rounded-2xl flex flex-col">
+        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white/95 backdrop-blur-xl border border-white/30 shadow-2xl z-[60] max-h-[80vh] overflow-hidden rounded-2xl flex flex-col">
           {/* Header */}
           <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-t-2xl">
             <div className="flex items-center justify-between">
@@ -250,7 +270,7 @@ export function NotificationDropdown() {
                         {getNotificationIcon(notification.type)}
                       </div>
                       
-                      <div className="flex-1 min-w-0" onClick={() => handleNotificationClick(notification)}>
+                      <div className="flex-1 min-w-0" onClick={() => handleNotificationItemClick(notification)}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">

@@ -216,13 +216,13 @@ export function ChecklistView({ task }: ChecklistViewProps) {
                   </div>
                 ) : (
                   <div>
-                    <h3 className={`text-sm font-medium ${
+                    <h3 className={`text-xs sm:text-sm font-medium ${
                       item.completed ? 'line-through text-gray-500' : 'text-gray-900'
                     }`}>
                       {item.title}
                     </h3>
                     {item.description && (
-                      <p className={`text-sm mt-1 ${
+                      <p className={`text-xs sm:text-sm mt-1 ${
                         item.completed ? 'line-through text-gray-400' : 'text-gray-600'
                       }`}>
                         {item.description}

@@ -28,9 +28,9 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 px-4 lg:px-6 pt-2">
-      <div className="glass-effect border border-white/20 rounded-2xl shadow-md px-6 lg:px-8 py-4 mx-auto max-w-7xl">
+      <div className="glass-effect border border-white/20 rounded-2xl shadow-md px-4 sm:px-6 lg:px-8 py-4 mx-auto max-w-7xl">
         <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-3 sm:space-x-6">
           <Button
             variant="ghost"
             size="sm"
@@ -42,13 +42,13 @@ export function Header({ onMenuClick }: HeaderProps) {
           
           <div className="flex items-center space-x-3">
             <img src="/Airtel/Airtel_ido6_-mlV0_5.svg" alt="Airtel" className="h-8 w-auto" />
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-2xl font-bold text-gradient">Airflow</h1>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-3 sm:space-x-6">
           {/* Search */}
           <form onSubmit={handleSearch} className="hidden md:flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-200/60">
             <Search className="h-4 w-4 text-gray-400" />

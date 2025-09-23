@@ -68,7 +68,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
       {/* Mobile backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-40 backdrop-blur-md bg-opacity-20 lg:hidden"
           onClick={onClose}
         />
       )}

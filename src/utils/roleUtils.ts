@@ -213,3 +213,50 @@ export const canEditTaskDependencies = (user: User | null): boolean => {
   // Project manager or admin
   return hasRole(user, ['admin', 'project_manager']);
 };
+
+// Document access management functions
+export const canManageDocumentAccess = (user: User | null, document?: any): boolean => {
+  if (!user) return false;
+  
+  // Admins can manage all document access
+  if (user.role === 'admin') return true;
+  
+  // Functional managers can manage all document access
+  if (user.role === 'functional_manager') return true;
+  
+  // Document uploaders can manage access to their own documents
+  if (document && document.uploadedBy && document.uploadedBy.id === user.id) {
+    return true;
+  }
+  
+  return false;
+};
+
+export const canAccessDocument = (user: User | null, document: any, project: any): boolean => {
+  if (!user) return false;
+  
+  // Admins can access all documents
+  if (user.role === 'admin') return true;
+  
+  // Document uploaders always have access to their own documents
+  if (document.uploadedBy && document.uploadedBy.id === user.id) {
+    return true;
+  }
+  
+  // If document is not access restricted, all project members can access it
+  if (!document.accessRestricted) {
+    return project.members.some((member: User) => member.id === user.id);
+  }
+  
+  // If document is access restricted, check if user is in allowed users list
+  if (document.allowedUsers && document.allowedUsers.includes(user.id)) {
+    return true;
+  }
+  
+  // Functional managers can access all documents in projects they manage
+  if (user.role === 'functional_manager') {
+    return project.members.some((member: User) => member.id === user.id);
+  }
+  
+  return false;
+};

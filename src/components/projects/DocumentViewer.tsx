@@ -1,19 +1,45 @@
 import { useState } from 'react';
-import { X, Download, ExternalLink, FileText, Image, FileSpreadsheet, FileCode, File } from 'lucide-react';
+import { X, Download, ExternalLink, FileText, Image, FileSpreadsheet, FileCode, File, Lock } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
-import type { ProjectDocument } from '../../types';
+import { canAccessDocument } from '../../utils/roleUtils';
+import type { ProjectDocument, Project, User } from '../../types';
 
 interface DocumentViewerProps {
   document: ProjectDocument | null;
+  project: Project | null;
+  currentUser: User | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function DocumentViewer({ document, isOpen, onClose }: DocumentViewerProps) {
+export function DocumentViewer({ document, project, currentUser, isOpen, onClose }: DocumentViewerProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
-  if (!isOpen || !document) return null;
+  if (!isOpen || !document || !project) return null;
+
+  // Check if user has access to this document
+  const hasAccess = canAccessDocument(currentUser, document, project);
+
+  if (!hasAccess) {
+    return (
+      <div className="fixed inset-0 backdrop-blur-md bg-black bg-opacity-20 flex items-center justify-center z-50">
+        <Card className="w-full max-w-md mx-4 shadow-2xl bg-white border border-gray-200">
+          <CardContent className="p-8 text-center">
+            <Lock className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-6">
+              You don't have permission to view this document.
+            </p>
+            <Button onClick={onClose}>
+              <X className="w-4 h-4 mr-2" />
+              Close
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const getFileIcon = (type: string) => {
     if (type.startsWith('image/')) return <Image className="w-8 h-8 text-green-500" />;

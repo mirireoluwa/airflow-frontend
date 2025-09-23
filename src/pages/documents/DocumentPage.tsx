@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, ExternalLink, FileText, Image, FileSpreadsheet, FileCode, File } from 'lucide-react';
+import { ArrowLeft, Download, ExternalLink, FileText, Image, FileSpreadsheet, FileCode, File, Lock, Settings } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
 import { useAirflow } from '../../context/AirflowContext';
 import { formatDistanceToNow } from 'date-fns';
+import { canAccessDocument, canManageDocumentAccess } from '../../utils/roleUtils';
+import { DocumentAccessModal } from '../../components/projects/DocumentAccessModal';
 
 export function DocumentPage() {
   const { projectId, documentId } = useParams<{ projectId: string; documentId: string }>();
   const navigate = useNavigate();
-  const { state } = useAirflow();
+  const { state, updateDocumentAccess } = useAirflow();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showAccessModal, setShowAccessModal] = useState(false);
 
   const project = state.projects.find(p => p.id === projectId);
   const document = project?.documents.find(d => d.id === documentId);
@@ -23,6 +26,29 @@ export function DocumentPage() {
 
   if (!project || !document) {
     return null;
+  }
+
+  // Check if user has access to this document
+  const hasAccess = canAccessDocument(state.currentUser, document, project);
+
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <Lock className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-6">
+              You don't have permission to view this document.
+            </p>
+            <Button onClick={() => navigate(`/projects/${project.id}`)}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Project
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const getFileIcon = (type: string) => {
@@ -62,10 +88,19 @@ export function DocumentPage() {
     window.open(document.url, '_blank');
   };
 
+  const handleManageAccess = () => {
+    setShowAccessModal(true);
+  };
+
+  const handleSaveAccess = (documentId: string, accessRestricted: boolean, allowedUsers: string[]) => {
+    updateDocumentAccess(project!.id, documentId, accessRestricted, allowedUsers);
+    setShowAccessModal(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4 rounded-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button
@@ -80,26 +115,45 @@ export function DocumentPage() {
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">{document.name}</h1>
                 <p className="text-sm text-gray-500">
-                  {formatFileSize(document.size)} • Uploaded by {document.uploadedBy.name} • {formatDistanceToNow(new Date(document.uploadedAt), { addSuffix: true })}
+                  {formatFileSize(document.size)} • Uploaded by {document.uploadedBy.name}
+                  {state.currentUser?.id === document.uploadedBy.id && (
+                    <span className="text-blue-600 font-medium"> (Your upload)</span>
+                  )}
+                  {' • '}{formatDistanceToNow(new Date(document.uploadedAt), { addSuffix: true })}
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
+            {canManageDocumentAccess(state.currentUser, document) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManageAccess}
+                className="rounded-full w-10 h-10 p-0"
+                title="Manage Access"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               variant="outline"
+              size="sm"
               onClick={handleDownload}
               disabled={isDownloading}
+              className="rounded-full w-10 h-10 p-0"
+              title={isDownloading ? 'Downloading...' : 'Download'}
             >
-              <Download className="w-4 h-4 mr-2" />
-              {isDownloading ? 'Downloading...' : 'Download'}
+              <Download className="w-4 h-4" />
             </Button>
             <Button
               variant="outline"
+              size="sm"
               onClick={handleOpenInNewTab}
+              className="rounded-full w-10 h-10 p-0"
+              title="Open in New Tab"
             >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Open in New Tab
+              <ExternalLink className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -232,6 +286,18 @@ or "Download" to save it to your device.`}
           </CardContent>
         </Card>
       </div>
+
+      {/* Document Access Modal */}
+      {showAccessModal && (
+        <DocumentAccessModal
+          document={document}
+          project={project}
+          currentUser={state.currentUser}
+          isOpen={showAccessModal}
+          onClose={() => setShowAccessModal(false)}
+          onSave={handleSaveAccess}
+        />
+      )}
     </div>
   );
 }
