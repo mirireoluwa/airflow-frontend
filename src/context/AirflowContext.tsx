@@ -640,11 +640,6 @@ export function AirflowProvider({ children }: { children: React.ReactNode }) {
           } catch (e) {
             console.error('Error parsing stored user:', e);
           }
-        } else {
-          // For development/testing - set a default user if none exists
-          const defaultUser = sampleUsers[2]; // Bob Johnson (employee)
-          dispatch({ type: 'SET_CURRENT_USER', payload: defaultUser });
-          localStorage.setItem('airflow_current_user', JSON.stringify(defaultUser));
         }
       } catch (error) {
         console.error('Error loading sample data:', error);

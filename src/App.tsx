@@ -27,10 +27,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 
 function ProtectedRoutes() {
-  const { state } = useAirflow();
+  const { state, logout } = useAirflow();
   const navigate = useNavigate();
   const location = useLocation();
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const inactivityTimerRef = useState<number | null>(null)[0] as unknown as { current?: number | null };
+  const lastActivityRef = useState<number>(Date.now())[0] as unknown as { current: number };
   
   useEffect(() => {
     if (state.currentUser) {
@@ -58,6 +60,43 @@ function ProtectedRoutes() {
       }
     }
   }, [state.currentUser]);
+
+  // Inactivity logout: 30 minutes
+  useEffect(() => {
+    if (!state.currentUser) {
+      return;
+    }
+
+    const INACTIVITY_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+
+    const resetTimer = () => {
+      lastActivityRef.current = Date.now();
+      if (inactivityTimerRef.current) {
+        window.clearTimeout(inactivityTimerRef.current);
+      }
+      inactivityTimerRef.current = window.setTimeout(() => {
+        // Check again to ensure truly inactive
+        if (Date.now() - lastActivityRef.current >= INACTIVITY_LIMIT_MS) {
+          logout();
+          navigate('/login', { replace: true });
+        }
+      }, INACTIVITY_LIMIT_MS);
+    };
+
+    const activityEvents: (keyof DocumentEventMap)[] = [
+      'mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'
+    ];
+
+    activityEvents.forEach(evt => document.addEventListener(evt, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      activityEvents.forEach(evt => document.removeEventListener(evt, resetTimer));
+      if (inactivityTimerRef.current) {
+        window.clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [state.currentUser, logout, navigate]);
 
 
 
