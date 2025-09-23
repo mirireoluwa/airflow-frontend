@@ -9,7 +9,7 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ column }: KanbanColumnProps) {
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   });
 
@@ -26,7 +26,11 @@ export function KanbanColumn({ column }: KanbanColumnProps) {
 
       <div
         ref={setNodeRef}
-        className="flex-1 space-y-4 min-h-[400px] p-2"
+        className={`flex-1 space-y-4 min-h-[400px] p-2 transition-all duration-200 ${
+          isOver
+            ? 'bg-red-50/50 border-2 border-dashed border-red-300 rounded-lg' 
+            : ''
+        }`}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {column.tasks.map((task) => (

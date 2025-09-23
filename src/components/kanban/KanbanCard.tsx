@@ -70,70 +70,78 @@ export function KanbanCard({ task }: KanbanCardProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white rounded-2xl border border-gray-200 p-4 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 ${
-        isDragging ? 'opacity-60 scale-105 shadow-2xl' : ''
+      className={`cursor-grab active:cursor-grabbing transition-all duration-200 hover:-translate-y-1 ${
+        isDragging 
+          ? 'bg-red-50/50 border-2 border-dashed border-red-300 rounded-2xl p-4 min-h-[120px] flex items-center justify-center' 
+          : 'bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:shadow-md'
       } ${
-        overdueInfo.isOverdue 
+        overdueInfo.isOverdue && !isDragging
           ? `border-l-4 ${getOverdueTaskColor(overdueInfo.daysOverdue).split(' ')[2]}` 
           : ''
       }`}
     >
-      <div className="space-y-3">
-        {/* Header with Priority */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-2">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityBadge(task.priority)}`}>
-              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-            </span>
-          </div>
+      {isDragging ? (
+        <div className="text-red-400 text-sm font-medium">
+          Drop zone
         </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Header with Priority */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityBadge(task.priority)}`}>
+                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              </span>
+            </div>
+          </div>
 
-        {/* Title */}
-        <h4 className="text-sm font-semibold text-gray-900 line-clamp-2">
-          {task.title}
-        </h4>
+          {/* Title */}
+          <h4 className="text-sm font-semibold text-gray-900 line-clamp-2">
+            {task.title}
+          </h4>
 
-        {/* Description */}
-        <p className="text-xs text-gray-600 line-clamp-2">
-          {task.description}
-        </p>
+          {/* Description */}
+          <p className="text-xs text-gray-600 line-clamp-2">
+            {task.description}
+          </p>
 
-        {/* Assigned Users - Avatar style */}
-        {task.assignee && (
-          <div className="flex items-center space-x-1">
-            <div className="flex -space-x-1">
-              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-medium">
-                {task.assignee.name.charAt(0).toUpperCase()}
+          {/* Assigned Users - Avatar style */}
+          {task.assignee && (
+            <div className="flex items-center space-x-1">
+              <div className="flex -space-x-1">
+                <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-medium">
+                  {task.assignee.name.charAt(0).toUpperCase()}
+                </div>
+                {/* Add more avatars if there are multiple assignees */}
+                {task.assignee.name === 'John Doe' && (
+                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
+                    J
+                  </div>
+                )}
+                {task.assignee.name === 'Jane Smith' && (
+                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-medium">
+                    J
+                  </div>
+                )}
               </div>
-              {/* Add more avatars if there are multiple assignees */}
-              {task.assignee.name === 'John Doe' && (
-                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
-                  J
-                </div>
-              )}
-              {task.assignee.name === 'Jane Smith' && (
-                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-medium">
-                  J
-                </div>
-              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Footer with Comments and Files */}
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-1">
-              <MessageCircle className="h-3 w-3" />
-              <span>{commentCount} comments</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <FileText className="h-3 w-3" />
-              <span>{fileCount} files</span>
+          {/* Footer with Comments and Files */}
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1">
+                <MessageCircle className="h-3 w-3" />
+                <span>{commentCount} comments</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <FileText className="h-3 w-3" />
+                <span>{fileCount} files</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

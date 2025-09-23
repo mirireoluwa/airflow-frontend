@@ -49,7 +49,10 @@ export function Kanban() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (!over) return;
+    if (!over) {
+      setActiveTask(null);
+      return;
+    }
 
     const taskId = active.id as string;
     const newStatus = over.id as TaskStatus;
