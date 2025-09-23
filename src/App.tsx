@@ -22,7 +22,7 @@ import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 
@@ -31,8 +31,8 @@ function ProtectedRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
   const [welcomeOpen, setWelcomeOpen] = useState(false);
-  const inactivityTimerRef = useState<number | null>(null)[0] as unknown as { current?: number | null };
-  const lastActivityRef = useState<number>(Date.now())[0] as unknown as { current: number };
+  const inactivityTimerRef = useRef<number | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
   
   useEffect(() => {
     if (state.currentUser) {
