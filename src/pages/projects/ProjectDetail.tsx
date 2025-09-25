@@ -172,8 +172,8 @@ export function ProjectDetail() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-4xl font-bold text-gradient mb-2">{project.name}</h1>
-            <p className="text-lg text-gray-600">{project.description}</p>
+            <h1 className="text-2xl md:text-4xl font-bold text-gradient mb-2">{project.name}</h1>
+            <p className="text-sm md:text-lg text-gray-600">{project.description}</p>
           </div>
         </div>
         <Button onClick={handleCreateTask}>

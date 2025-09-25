@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, ExternalLink, FileText, Image, FileSpreadsheet, FileCode, File, Lock, Settings } from 'lucide-react';
+import { ArrowLeft, Download, ExternalLink, FileText, Image, FileSpreadsheet, FileCode, File, Lock, Settings, MoreVertical } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
 import { useAirflow } from '../../context/AirflowContext';
@@ -14,6 +14,7 @@ export function DocumentPage() {
   const { state, updateDocumentAccess } = useAirflow();
   const [isDownloading, setIsDownloading] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const project = state.projects.find(p => p.id === projectId);
   const document = project?.documents.find(d => d.id === documentId);
@@ -100,21 +101,21 @@ export function DocumentPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 rounded-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 rounded-lg relative">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
             <Button
               variant="ghost"
               onClick={() => navigate(`/projects/${projectId}`)}
-              className="p-2 hover:bg-gray-100 rounded-xl"
+              className="p-2 hover:bg-gray-100 rounded-xl flex-shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center space-x-3">
               {getFileIcon(document.type)}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">{document.name}</h1>
-                <p className="text-sm text-gray-500">
+                <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate">{document.name}</h1>
+                <p className="text-xs sm:text-sm text-gray-500">
                   {formatFileSize(document.size)} • Uploaded by {document.uploadedBy.name}
                   {state.currentUser?.id === document.uploadedBy.id && (
                     <span className="text-blue-600 font-medium"> (Your upload)</span>
@@ -124,37 +125,81 @@ export function DocumentPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            {canManageDocumentAccess(state.currentUser, document) && (
+          <div className="flex items-center flex-shrink-0 relative">
+            {/* Desktop actions */}
+            <div className="hidden sm:flex items-center gap-3">
+              {canManageDocumentAccess(state.currentUser, document) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleManageAccess}
+                  className="rounded-full w-10 h-10 p-0"
+                  title="Manage Access"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleManageAccess}
+                onClick={handleDownload}
+                disabled={isDownloading}
                 className="rounded-full w-10 h-10 p-0"
-                title="Manage Access"
+                title={isDownloading ? 'Downloading...' : 'Download'}
               >
-                <Settings className="w-4 h-4" />
+                <Download className="w-4 h-4" />
               </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="rounded-full w-10 h-10 p-0"
-              title={isDownloading ? 'Downloading...' : 'Download'}
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenInNewTab}
-              className="rounded-full w-10 h-10 p-0"
-              title="Open in New Tab"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenInNewTab}
+                className="rounded-full w-10 h-10 p-0"
+                title="Open in New Tab"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Mobile kebab menu */}
+            <div className="sm:hidden relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMobileMenu(v => !v)}
+                className="rounded-full w-9 h-9 p-0"
+                aria-label="More options"
+                title="More options"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </Button>
+              {showMobileMenu && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  {canManageDocumentAccess(state.currentUser, document) && (
+                    <button
+                      onClick={() => { setShowMobileMenu(false); handleManageAccess(); }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <Settings className="w-4 h-4 text-gray-600" />
+                      Manage Access
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setShowMobileMenu(false); handleDownload(); }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4 text-gray-600" />
+                    {isDownloading ? 'Downloading…' : 'Download'}
+                  </button>
+                  <button
+                    onClick={() => { setShowMobileMenu(false); handleOpenInNewTab(); }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4 text-gray-600" />
+                    Open in New Tab
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -188,12 +233,12 @@ export function DocumentPage() {
                         <Image className="w-24 h-24 text-green-500 mx-auto mb-4" />
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">Image Preview</h3>
                         <p className="text-gray-600 mb-4">Click below to view or download the image</p>
-                        <div className="space-x-3">
-                          <Button onClick={handleOpenInNewTab}>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
+                          <Button onClick={handleOpenInNewTab} className="w-full sm:w-auto">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Open Image
                           </Button>
-                          <Button variant="outline" onClick={handleDownload} disabled={isDownloading}>
+                          <Button variant="outline" onClick={handleDownload} disabled={isDownloading} className="w-full sm:w-auto">
                             <Download className="w-4 h-4 mr-2" />
                             {isDownloading ? 'Downloading...' : 'Download'}
                           </Button>
@@ -208,12 +253,12 @@ export function DocumentPage() {
                         <FileText className="w-24 h-24 text-red-500 mx-auto mb-4" />
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">PDF Document</h3>
                         <p className="text-gray-600 mb-4">Click below to view or download the PDF</p>
-                        <div className="space-x-3">
-                          <Button onClick={handleOpenInNewTab}>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
+                          <Button onClick={handleOpenInNewTab} className="w-full sm:w-auto">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Open PDF
                           </Button>
-                          <Button variant="outline" onClick={handleDownload} disabled={isDownloading}>
+                          <Button variant="outline" onClick={handleDownload} disabled={isDownloading} className="w-full sm:w-auto">
                             <Download className="w-4 h-4 mr-2" />
                             {isDownloading ? 'Downloading...' : 'Download'}
                           </Button>
@@ -260,12 +305,12 @@ or "Download" to save it to your device.`}
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">Document Preview</h3>
                         <p className="text-gray-600 mb-2">File: {document.name}</p>
                         <p className="text-gray-600 mb-4">Type: {document.type || 'Unknown'}</p>
-                        <div className="space-x-3">
-                          <Button onClick={handleDownload} disabled={isDownloading}>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
+                          <Button onClick={handleDownload} disabled={isDownloading} className="w-full sm:w-auto">
                             <Download className="w-4 h-4 mr-2" />
                             {isDownloading ? 'Downloading...' : 'Download'}
                           </Button>
-                          <Button variant="outline" onClick={handleOpenInNewTab}>
+                          <Button variant="outline" onClick={handleOpenInNewTab} className="w-full sm:w-auto">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Open in New Tab
                           </Button>

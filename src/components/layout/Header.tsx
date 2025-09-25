@@ -37,7 +37,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             onClick={onMenuClick}
             className="lg:hidden p-2 hover:bg-white/60"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-6 w-6 md:h-5 md:w-5" />
           </Button>
           
           <div className="flex items-center space-x-3">
@@ -51,7 +51,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex items-center space-x-3 sm:space-x-6">
           {/* Search */}
           <form onSubmit={handleSearch} className="hidden md:flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-200/60">
-            <Search className="h-4 w-4 text-gray-400" />
+            <Search className="h-5 w-5 md:h-4 md:w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search projects, tasks..."
@@ -60,6 +60,18 @@ export function Header({ onMenuClick }: HeaderProps) {
               className="bg-transparent border-none outline-none text-sm w-64 placeholder-gray-400"
             />
           </form>
+
+          {/* Mobile Search Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/search')}
+            className="md:hidden p-2 hover:bg-white/60 rounded-xl"
+            aria-label="Search"
+            title="Search"
+          >
+            <Search className="h-6 w-6 md:h-5 md:w-5" />
+          </Button>
 
           {/* Notifications */}
           <NotificationDropdown />

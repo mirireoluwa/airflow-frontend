@@ -18,9 +18,9 @@ export function Projects() {
     <div className="space-y-8">
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-        <div className="text-center lg:text-left">
-          <h1 className="text-4xl font-bold text-gradient mb-2">Projects</h1>
-          <p className="text-lg text-gray-600">Manage your projects and track their progress.</p>
+        <div className="text-left">
+          <h1 className="text-2xl md:text-4xl font-bold text-gradient mb-2">Projects</h1>
+          <p className="text-sm md:text-lg text-gray-600">Manage your projects and track their progress.</p>
         </div>
         <Button onClick={handleCreateProject} variant="apple-primary">
           <Plus className="h-4 w-4 mr-2" />

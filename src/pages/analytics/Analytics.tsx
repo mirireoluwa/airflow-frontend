@@ -37,7 +37,7 @@ export function Analytics() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="text-center lg:text-left mb-4 pb-1">
+      <div className="text-left mb-4 pb-1">
         <h1 className="text-4xl font-bold text-gradient mb-2 pb-2">Analytics</h1>
         <p className="text-lg text-gray-600">Track your team's performance and project insights.</p>
       </div>

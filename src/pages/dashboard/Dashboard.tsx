@@ -52,9 +52,9 @@ export function Dashboard() {
     return (
       <div className="space-y-8">
         {/* Page Header */}
-        <div className="text-center lg:text-left">
-          <h1 className="text-4xl font-bold text-gradient mb-2">Dashboard</h1>
-          <p className="text-lg text-gray-600">
+        <div className="text-left">
+          <h1 className="text-2xl md:text-4xl font-bold text-gradient mb-2">Dashboard</h1>
+          <p className="text-sm md:text-lg text-gray-600">
             {canAccessProjects(state.currentUser) 
               ? "Welcome back! Here's what's happening with your projects."
               : "Welcome back! Here's what's happening with your tasks."
@@ -81,9 +81,9 @@ export function Dashboard() {
   return (
     <div className="space-y-8 apple-stagger-animation">
       {/* Page Header */}
-      <div className="text-center lg:text-left">
-        <h1 className="text-large-title font-bold text-gradient mb-2">Dashboard</h1>
-        <p className="text-body text-gray-600">
+      <div className="text-left">
+        <h1 className="text-2xl md:text-large-title font-bold text-gradient mb-2">Dashboard</h1>
+        <p className="text-sm md:text-body text-gray-600">
           {canAccessProjects(state.currentUser) 
             ? "Welcome back! Here's what's happening with your projects."
             : "Welcome back! Here's what's happening with your tasks."

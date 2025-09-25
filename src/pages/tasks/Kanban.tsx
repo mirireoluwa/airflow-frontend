@@ -68,9 +68,9 @@ export function Kanban() {
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div className="text-center lg:text-left mb-4 pb-4">
-        <h1 className="text-4xl font-bold text-gradient mb-2">Kanban Board</h1>
-        <p className="text-lg text-gray-600">Drag and drop tasks to update their status.</p>
+      <div className="text-left mb-4 pb-4">
+        <h1 className="text-2xl md:text-4xl font-bold text-gradient mb-2">Kanban Board</h1>
+        <p className="text-sm md:text-lg text-gray-600">Drag and drop tasks to update their status.</p>
       </div>
 
       {/* Kanban Board */}

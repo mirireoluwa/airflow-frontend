@@ -188,7 +188,7 @@ export function Settings() {
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div className="text-center lg:text-left">
+      <div className="text-left">
         <h1 className="text-4xl font-bold text-gradient mb-2 pb-2">Settings</h1>
         <p className="text-lg text-gray-600">Manage your profile, security, and preferences.</p>
       </div>

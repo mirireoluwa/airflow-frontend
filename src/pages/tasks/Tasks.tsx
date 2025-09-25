@@ -113,9 +113,9 @@ export function Tasks() {
     <div className="space-y-8">
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-        <div className="text-center lg:text-left">
+        <div className="text-left">
           <div className="flex items-center space-x-3 mb-2">
-            <h1 className="text-4xl font-bold text-gradient">
+            <h1 className="text-2xl md:text-4xl font-bold text-gradient">
               {overdueFilter ? 'Overdue Tasks' : 'Tasks'}
             </h1>
             {overdueFilter && (
@@ -131,7 +131,7 @@ export function Tasks() {
               </div>
             )}
           </div>
-          <p className="text-lg text-gray-600">
+          <p className="text-sm md:text-lg text-gray-600">
             {overdueFilter 
               ? 'Tasks that are past their due date and need attention'
               : 'Manage and track all your tasks.'
